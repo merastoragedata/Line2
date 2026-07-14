@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>400 kV Karjat — Grid Portal</title>
+<title>Line Maps for 400 kV Karjat</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -92,6 +92,10 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .jur-line-name { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
 .jur-officer { font-size: 12.5px; color: var(--ink-muted); padding: 3px 0; }
 .jur-mobile { font-family: "JetBrains Mono"; font-size: 11.5px; padding-left: 20px; color: var(--cyan); }
+.jur-mobile-actions { display: inline-flex; align-items: center; gap: 6px; padding-left: 20px; margin-top: 3px; }
+.contact-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 9px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--border); color: var(--cyan); text-decoration: none; }
+.contact-btn.whatsapp { color: #4ade80; border-color: rgba(74,222,128,0.4); }
+.contact-btn:hover { filter: brightness(1.2); }
 
 /* ---------------- Tables ---------------- */
 .table-stack { display: flex; flex-direction: column; gap: 14px; }
@@ -106,6 +110,14 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .officer-chip { background: var(--panel2); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
 .officer-chip a { color: var(--cyan); font-family: "JetBrains Mono"; margin-left: 4px; }
 .muted { color: var(--ink-muted); }
+.maint-layout { display: grid; grid-template-columns: 1fr 200px; gap: 16px; align-items: start; }
+@media (max-width: 820px) { .maint-layout { grid-template-columns: 1fr; } }
+.maint-table td { vertical-align: top; }
+.officer-stack { display: flex; flex-direction: column; gap: 8px; }
+.officer-line { font-size: 12.5px; }
+.multi-lmsd-col { background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.multi-lmsd-title { font-family: "JetBrains Mono"; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); margin-bottom: 8px; }
+.multi-lmsd-chip { font-size: 12px; padding: 5px 9px; border-radius: 6px; border: 1.5px solid; margin-bottom: 6px; }
 
 .chip-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 .chip { background: var(--panel2); border: 1px solid var(--border); color: var(--ink-muted); border-radius: 999px; padding: 6px 14px; font-size: 12.5px; }
@@ -203,8 +215,36 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .editor-sub-name { flex: 1; }
 .editor-sub-coords { color: var(--ink-muted); font-size: 10.5px; }
 .tower-num { position: relative; left: -50%; top: -26px; background: #0c1117; color: #fff; font-family: "JetBrains Mono", monospace; font-weight: 700; line-height: 1; border-radius: 4px; border: 1.5px solid rgba(255,255,255,0.5); white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.5); pointer-events: none; }
+.sub-name-label { position: relative; left: 10px; top: 6px; background: rgba(12,17,23,0.82); color: #e7ecf3; font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 11px; line-height: 1.15; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.18); white-space: nowrap; pointer-events: none; }
+.grat-label { position: relative; top: -8px; left: 2px; font-family: "JetBrains Mono", monospace; font-size: 9px; color: #6b7f96; background: rgba(255,255,255,0.75); padding: 0 3px; border-radius: 2px; pointer-events: none; white-space: nowrap; }
 .layer-switch-single { background: var(--panel2); border: 1px solid var(--border); color: var(--ink-muted); border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
 .layer-switch-single.active { background: rgba(66,214,200,0.14); border-color: var(--cyan); color: var(--cyan); }
+
+/* ---------------- Print Maps ---------------- */
+.print-page-wrap { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.print-toolbar { display: flex; gap: 10px; align-items: center; }
+.print-sheet { background: #fff; color: #111; border-radius: 4px; box-shadow: 0 4px 24px rgba(0,0,0,0.35); padding: 14mm; box-sizing: border-box; }
+.print-sheet.orient-portrait { width: 210mm; min-height: 297mm; }
+.print-sheet.orient-landscape { width: 297mm; min-height: 210mm; }
+.print-sheet-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 10px; }
+.print-sheet-title { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 19px; color: #111; }
+.print-sheet-subtitle { font-size: 11.5px; color: #555; margin-top: 2px; }
+.print-sheet-brand { font-family: "JetBrains Mono", monospace; font-size: 10px; color: #777; white-space: nowrap; padding-top: 3px; }
+.print-map-frame { border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+.print-map-frame .map-controls { display: none; }
+.print-lmsd-section { margin-top: 14px; }
+.print-lmsd-heading { font-family: "JetBrains Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #333; margin-bottom: 6px; font-weight: 700; }
+.print-lmsd-table { width: 100%; border-collapse: collapse; font-size: 11px; color: #222; }
+.print-lmsd-table th, .print-lmsd-table td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #ddd; }
+.print-lmsd-table th { color: #555; font-family: "JetBrains Mono", monospace; font-size: 9.5px; text-transform: uppercase; }
+.print-sheet-foot { margin-top: 14px; font-size: 9.5px; color: #888; border-top: 1px solid #ddd; padding-top: 6px; }
+@media print {
+  body * { visibility: hidden; }
+  .print-sheet, .print-sheet * { visibility: visible; }
+  .no-print { display: none !important; }
+  .print-sheet { position: absolute; top: 0; left: 0; box-shadow: none; margin: 0; }
+  @page { margin: 8mm; }
+}
 </style>
 </head>
 <body>
@@ -482,6 +522,7 @@ const JURISDICTION_SEED = [
   {
     line: "400 kV Karjat - Girawali Ckt I & II",
     length: "214.6 km",
+    lineKeys: ["karjat_lilo", "lilo_girawali"],
     segments: [
       { chainage: "0-37 km", division: "LMSD Lonikand" },
       { chainage: "37-87 km", division: "400 kV LMSD Lamboti" },
@@ -496,18 +537,21 @@ const JURISDICTION_SEED = [
   {
     line: "400 kV Karjat - Lonikand I & II",
     length: "85.4 km",
+    lineKeys: ["karjat_lilo", "lilo_lonikand2"],
     segments: [{ chainage: "0-85.4 km", division: "LMSD Lonikand" }],
     teams: [{ teamName: "Team 1", members: [{ name: "Aishwarya Kirtane", post: "AEE", mobile: "9922364856" }] }]
   },
   {
     line: "400/765 kV Karjat - Pune East (planned)",
     length: "~50 km D/C",
+    lineKeys: ["karjat_puneeast"],
     segments: [{ chainage: "0-50 km", division: "POWERGRID (to be assigned)" }],
     teams: []
   },
   {
     line: "220 kV Ahilyanagar",
     length: "79.6 km",
+    lineKeys: ["karjat_cutab", "cutab_ahilyanagar"],
     segments: [{ chainage: "0-79.6 km", division: "LMSD Kedgaon" }],
     teams: [{ teamName: "Team 1", members: [
       { name: "Kishor Katore", post: "AEE", mobile: "9762430884" },
@@ -517,6 +561,7 @@ const JURISDICTION_SEED = [
   {
     line: "220 kV Bhose / Belwandi",
     length: "40.7 km",
+    lineKeys: ["karjat_cutab", "cutab_belwandi"],
     segments: [{ chainage: "0-40.7 km", division: "LMSD Kedgaon" }],
     teams: [{ teamName: "Team 1", members: [
       { name: "Kishor Katore", post: "AEE", mobile: "9762430884" },
@@ -526,24 +571,28 @@ const JURISDICTION_SEED = [
   {
     line: "220 kV Bhigwan",
     length: "19.84 km",
+    lineKeys: ["karjat_bhigwan"],
     segments: [{ chainage: "0-19.84 km", division: "LMSD Baramati" }],
     teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
   },
   {
     line: "220 kV Shirsuphal",
     length: "19.84 km",
+    lineKeys: ["karjat_shirsuphal"],
     segments: [{ chainage: "0-19.84 km", division: "LMSD Baramati" }],
     teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
   },
   {
     line: "220 kV Jeur-I",
     length: "50.69 km",
+    lineKeys: ["karjat_jeur"],
     segments: [{ chainage: "0-50.69 km", division: "LMSD Baramati" }],
     teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
   },
   {
     line: "220 kV Jeur-II",
     length: "50.69 km",
+    lineKeys: ["karjat_jeur"],
     segments: [{ chainage: "0-50.69 km", division: "LMSD Baramati" }],
     teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
   }
@@ -669,6 +718,109 @@ function offsetPath(path, meters) {
   }
   return out;
 }
+// ---- LMSD corridor ribbon helpers ----
+function parseKmTotal(str) {
+  const m = String(str || "").match(/[\d.]+/);
+  return m ? parseFloat(m[0]) : 1;
+}
+function parseChainageRange(str) {
+  const nums = String(str || "").match(/[\d.]+/g);
+  if (!nums || nums.length < 2) return [0, 1];
+  return [parseFloat(nums[0]), parseFloat(nums[nums.length - 1])];
+}
+function buildFullPath(lineKeys) {
+  const pts = [];
+  (lineKeys || []).forEach((key) => {
+    const line = LINES.find((l) => l.key === key);
+    if (!line || !line.path) return;
+    line.path.forEach((p) => {
+      const last = pts[pts.length - 1];
+      if (!last || Math.hypot(last[0] - p[0], last[1] - p[1]) > 1e-9) pts.push(p);
+    });
+  });
+  return pts;
+}
+function pathSliceByFraction(path, f0, f1) {
+  if (path.length < 2) return path;
+  const segLens = [];
+  let total = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    const d = Math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1]);
+    segLens.push(d);
+    total += d;
+  }
+  const at = (frac) => {
+    let target = total * Math.max(0, Math.min(1, frac));
+    for (let i = 0; i < segLens.length; i++) {
+      if (target <= segLens[i] || i === segLens.length - 1) {
+        const t = segLens[i] ? target / segLens[i] : 0;
+        return { idx: i, t };
+      }
+      target -= segLens[i];
+    }
+    return { idx: segLens.length - 1, t: 1 };
+  };
+  const lerp = (idx, t) => {
+    const [lat1, lon1] = path[idx];
+    const [lat2, lon2] = path[idx + 1];
+    return [lat1 + (lat2 - lat1) * t, lon1 + (lon2 - lon1) * t];
+  };
+  const a = at(f0);
+  const b = at(f1);
+  const out = [lerp(a.idx, a.t)];
+  for (let i = a.idx + 1; i <= b.idx; i++) out.push(path[i]);
+  out.push(lerp(b.idx, b.t));
+  return out;
+}
+function ribbonFromPath(path, halfWidthMeters) {
+  if (path.length < 2) return [];
+  const left = offsetPath(path, halfWidthMeters);
+  const right = offsetPath(path, -halfWidthMeters).slice().reverse();
+  return left.concat(right);
+}
+const DIVISION_PALETTE = [
+  "#42d6c8", "#f2a53c", "#ef4d8f", "#a78bfa", "#4ade80",
+  "#60a5fa", "#fb923c", "#e879f9", "#facc15", "#34d399", "#f87171", "#818cf8"
+];
+const DIVISION_COLOR_SEED = { "LMSD Lonikand": "#42d6c8", "400 kV LMSD Lamboti": "#f2a53c", "LMSD Girwali": "#ef4d8f", "LMSD Kedgaon": "#a78bfa", "LMSD Baramati": "#4ade80" };
+function divisionColor(name) {
+  if (DIVISION_COLOR_SEED[name]) return DIVISION_COLOR_SEED[name];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return DIVISION_PALETTE[h % DIVISION_PALETTE.length];
+}
+// Builds one ribbon polygon per (line, segment) pair: the corridor of that
+// LMSD division's stretch of that physical circuit. Falls back gracefully
+// (skips) if lineKeys/path data isn't available for a jurisdiction entry.
+function buildLmsdCorridors(jurisdictionData) {
+  const corridors = [];
+  (jurisdictionData || []).forEach((entry) => {
+    if (!entry.lineKeys || !entry.lineKeys.length) return;
+    const fullPath = buildFullPath(entry.lineKeys);
+    if (fullPath.length < 2) return;
+    const totalKm = parseKmTotal(entry.length);
+    const segTeamAligned = entry.segments.length === entry.teams.length;
+    entry.segments.forEach((seg, i) => {
+      const [c0, c1] = parseChainageRange(seg.chainage);
+      const f0 = totalKm ? c0 / totalKm : 0;
+      const f1 = totalKm ? c1 / totalKm : 1;
+      const slice = pathSliceByFraction(fullPath, f0, f1);
+      if (slice.length < 2) return;
+      const team = segTeamAligned ? entry.teams[i] : null;
+      const officers = team ? team.members : entry.teams.flatMap((t) => t.members);
+      corridors.push({
+        id: `${entry.line}__${i}`,
+        line: entry.line,
+        division: seg.division,
+        chainage: seg.chainage,
+        color: divisionColor(seg.division),
+        polygon: ribbonFromPath(slice, 260),
+        officers
+      });
+    });
+  });
+  return corridors;
+}
 function interpolateAlong(path, frac) {
   const segLens = [];
   let total = 0;
@@ -721,7 +873,11 @@ function towerNumIcon(label, zoomLevel) {
 function GridMap({
   substationKeys = null,
   lineKeys = null,
+  kvFilter = null,
+  emphasizeKeys = null,
   showZones = false,
+  showGraticule = false,
+  jurisdictionData = JURISDICTION_SEED,
   showKm = false,
   weatherEnabled = false,
   onSelect = () => {
@@ -739,6 +895,7 @@ function GridMap({
   const [mode, setMode] = useState("normal");
   const [hybridOpacity, setHybridOpacity] = useState(55);
   const [mapZoom, setMapZoom] = useState(zoom);
+  const [viewTick, setViewTick] = useState(0);
   const [showTowerNumbers, setShowTowerNumbers] = useState(true);
   const [weatherData, setWeatherData] = useState({});
   const [downloading, setDownloading] = useState(false);
@@ -746,6 +903,7 @@ function GridMap({
     const map = L.map(containerRef.current, { zoomControl: true }).setView(center, zoom);
     mapRef.current = map;
     map.on("zoomend", () => setMapZoom(map.getZoom()));
+    map.on("moveend", () => setViewTick((t) => t + 1));
     normalLayerRef.current = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       crossOrigin: true,
@@ -770,46 +928,66 @@ function GridMap({
     const group = overlayGroupRef.current;
     group.clearLayers();
     if (showZones) {
-      LMSD_ZONES.forEach((zone) => {
-        const poly = L.polygon(zone.poly, {
-          color: zone.color,
-          weight: 1.5,
-          fillColor: zone.color,
-          fillOpacity: 0.08,
-          dashArray: "4 5"
+      const corridors = buildLmsdCorridors(jurisdictionData);
+      corridors.forEach((c) => {
+        const poly = L.polygon(c.polygon, {
+          color: c.color,
+          weight: 1,
+          fillColor: c.color,
+          fillOpacity: 0.38,
+          opacity: 0.85
         }).addTo(group);
-        const matching = JURISDICTION_SEED.filter(
-          (j) => j.segments.some((s) => s.division === zone.name)
-        );
-        const officerLines = matching.flatMap((j) => j.teams.flatMap((t) => t.members.map((m) => `${m.name} (${m.post}) \xB7 ${m.mobile}`))).filter((v, i, a) => a.indexOf(v) === i);
+        const officerLines = (c.officers || []).map((m) => `${m.name} (${m.post}) \xB7 ${m.mobile}`);
         const html = `<div class="popup-card">
-            <div class="popup-title">${zone.name}</div>
-            <div class="popup-sub">${matching.map((m) => m.line).join("<br/>")}</div>
+            <div class="popup-title">${c.division}</div>
+            <div class="popup-sub">${c.line}<br/>Chainage: ${c.chainage}</div>
             <hr/>
-            ${officerLines.map((o) => `<div class="popup-officer">${o}</div>`).join("")}
+            ${officerLines.length ? officerLines.map((o) => `<div class="popup-officer">${o}</div>`).join("") : '<div class="popup-officer">No officer assigned yet</div>'}
           </div>`;
-        poly.bindTooltip(zone.name, { sticky: true });
+        poly.bindTooltip(`${c.division} \u00b7 ${c.chainage}`, { sticky: true });
         poly.bindPopup(html);
-        poly.on("click", () => onSelect(zone.name, "zone"));
+        poly.on("mouseover", () => poly.setStyle({ fillOpacity: 0.6, weight: 2 }));
+        poly.on("mouseout", () => poly.setStyle({ fillOpacity: 0.38, weight: 1 }));
+        poly.on("click", () => onSelect(c.division, "zone"));
       });
     }
-    const linesToShow = LINES.filter((l) => !lineKeys || lineKeys.includes(l.key)).filter(
+    if (showGraticule) {
+      const b = map.getBounds();
+      const step = mapZoom >= 10 ? 0.25 : mapZoom >= 7 ? 0.5 : 1;
+      const round = (v, s) => Math.floor(v / s) * s;
+      for (let lat = round(b.getSouth(), step); lat <= b.getNorth() + step; lat += step) {
+        L.polyline([[lat, b.getWest()], [lat, b.getEast()]], { color: "#8fa3b8", weight: 0.5, opacity: 0.45, dashArray: "2 5", interactive: false }).addTo(group);
+        L.marker([lat, b.getWest()], {
+          icon: L.divIcon({ className: "grat-label-icon", html: `<div class="grat-label">${lat.toFixed(2)}\u00b0N</div>`, iconSize: [1, 1], iconAnchor: [0, 0] }),
+          interactive: false
+        }).addTo(group);
+      }
+      for (let lon = round(b.getWest(), step); lon <= b.getEast() + step; lon += step) {
+        L.polyline([[b.getSouth(), lon], [b.getNorth(), lon]], { color: "#8fa3b8", weight: 0.5, opacity: 0.45, dashArray: "2 5", interactive: false }).addTo(group);
+        L.marker([b.getSouth(), lon], {
+          icon: L.divIcon({ className: "grat-label-icon", html: `<div class="grat-label">${lon.toFixed(2)}\u00b0E</div>`, iconSize: [1, 1], iconAnchor: [0, 0] }),
+          interactive: false
+        }).addTo(group);
+      }
+    }
+    const linesToShow = LINES.filter((l) => !lineKeys || lineKeys.includes(l.key)).filter((l) => !kvFilter || kvFilter.includes(l.kv)).filter(
       (l) => l.path && l.path.length > 1
     );
     linesToShow.forEach((line) => {
+      const emphasized = !emphasizeKeys || emphasizeKeys.includes(line.key);
       const color = line.color || KV_COLOR[line.kv] || "#999";
       const dash = line.status === "planned" ? "6 8" : null;
       const paths = line.circuits >= 2 ? [offsetPath(line.path, 90), offsetPath(line.path, -90)] : [line.path];
       paths.forEach((p) => {
         L.polyline(p, {
           color,
-          weight: line.kv === "220" ? 3 : 3.6,
-          opacity: 0.92,
+          weight: emphasized ? (line.kv === "220" ? 3 : 3.6) : 1.1,
+          opacity: emphasized ? 0.92 : 0.55,
           dashArray: dash,
           lineCap: "round"
         }).addTo(group).bindTooltip(`${line.from} \u2192 ${line.to} (${line.km || ""})`, { sticky: true });
       });
-      if (showTowerNumbers && mapZoom >= 13 && line.path.length > 2) {
+      if (showTowerNumbers && emphasized && mapZoom >= 13 && line.path.length > 2) {
         line.path.forEach((pt, idx) => {
           const label = computeTowerLabel(line, idx);
           if (!label) return;
@@ -844,6 +1022,16 @@ function GridMap({
         </div>`;
       marker.bindPopup(html);
       marker.on("click", () => onSelect(key, "substation"));
+      const shortName = s.name.replace("400 kV ", "").replace("220 kV ", "").replace("765 kV ", "");
+      L.marker([s.lat, s.lon], {
+        icon: L.divIcon({
+          className: "sub-name-icon",
+          html: `<div class="sub-name-label">${shortName}</div>`,
+          iconSize: [1, 1],
+          iconAnchor: [0, 0]
+        }),
+        interactive: false
+      }).addTo(group);
       if (weatherEnabled && w) {
         const icon = L.divIcon({
           className: "weather-badge",
@@ -854,7 +1042,7 @@ function GridMap({
         L.marker([s.lat, s.lon], { icon }).addTo(group);
       }
     });
-  }, [substationKeys, lineKeys, showZones, showKm, weatherEnabled, weatherData, onSelect, mapZoom, showTowerNumbers]);
+  }, [substationKeys, lineKeys, kvFilter, emphasizeKeys, showZones, jurisdictionData, showGraticule, showKm, weatherEnabled, weatherData, onSelect, mapZoom, viewTick, showTowerNumbers]);
   useEffect(() => {
     if (!weatherEnabled) return;
     const keys = Object.entries(SUBSTATIONS).filter(([k, s]) => !s.hidden && (!substationKeys || substationKeys.includes(k))).map(([k, s]) => ({ key: k, lat: s.lat, lon: s.lon }));
@@ -920,68 +1108,139 @@ const KARJAT_LINE_KEYS = [
   "karjat_shirsuphal",
   "karjat_jeur"
 ];
-function Disclaimer() {
-  return /* @__PURE__ */ React.createElement("div", { className: "disclaimer" }, "Route paths are illustrative estimated alignments built from known line lengths and LILO points \u2014 ", /* @__PURE__ */ React.createElement("strong", null, "not surveyed tower/GPS data."), " Points marked ", /* @__PURE__ */ React.createElement("span", { className: "tag-approx" }, "approx."), " use a nearby town/taluka as a stand-in.");
-}
-function HomePage() {
-  const [selected, setSelected] = useState(null);
-  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement(
-    PageHeader,
-    {
-      eyebrow: "MSETCL \xB7 Ahmednagar District",
-      title: "400 kV Karjat \u2014 Full Network Map",
-      subtitle: "Satellite / hybrid / map layers \xB7 live weather \xB7 zoomable \xB7 downloadable"
-    }
-  ), /* @__PURE__ */ React.createElement(
-    GridMap,
-    {
-      substationKeys: KARJAT_SUBSTATION_KEYS,
-      lineKeys: KARJAT_LINE_KEYS,
-      weatherEnabled: true,
-      onSelect: (k) => setSelected(k),
-      height: "75vh",
-      downloadName: "karjat-full-map"
-    }
-  ), /* @__PURE__ */ React.createElement(Disclaimer, null));
-}
-function LmsdPage() {
-  const [selectedZone, setSelectedZone] = useState(null);
-  const zoneInfo = useMemo(() => {
-    if (!selectedZone) return null;
-    const zone = LMSD_ZONES.find((z) => z.name === selectedZone);
-    const matching = JURISDICTION_SEED.filter((j) => j.segments.some((s) => s.division === selectedZone));
-    return { zone, matching };
-  }, [selectedZone]);
-  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement(
-    PageHeader,
-    {
-      eyebrow: "Page 2",
-      title: "LMSD Jurisdiction Map",
-      subtitle: "Km-wise markers on each line \xB7 click or hover a zone for its responsible office"
-    }
-  ), /* @__PURE__ */ React.createElement("div", { className: "split-layout" }, /* @__PURE__ */ React.createElement(
-    GridMap,
-    {
-      substationKeys: KARJAT_SUBSTATION_KEYS,
-      lineKeys: KARJAT_LINE_KEYS,
-      showZones: true,
-      showKm: true,
-      onSelect: (k, type) => type === "zone" && setSelectedZone(k),
-      height: "70vh",
-      downloadName: "karjat-lmsd-map"
-    }
-  ), /* @__PURE__ */ React.createElement("aside", { className: "side-panel" }, !zoneInfo ? /* @__PURE__ */ React.createElement("div", { className: "empty-hint" }, "Click or hover a shaded LMSD zone on the map to see its responsible office and officers here.") : /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", null, zoneInfo.zone.name), zoneInfo.matching.map((line) => /* @__PURE__ */ React.createElement("div", { key: line.line, className: "jur-card" }, /* @__PURE__ */ React.createElement("div", { className: "jur-line-name" }, line.line), line.teams.flatMap((t) => t.members).map((m, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "jur-officer" }, /* @__PURE__ */ React.createElement(User, { size: 13 }), " ", m.name, " ", /* @__PURE__ */ React.createElement("span", { className: "muted" }, "\xB7 ", m.post), /* @__PURE__ */ React.createElement("div", { className: "jur-mobile" }, /* @__PURE__ */ React.createElement(Phone, { size: 12 }), " ", m.mobile)))))))), /* @__PURE__ */ React.createElement(Disclaimer, null));
-}
-function MaintenancePage() {
+function useLiveJurisdiction() {
   const [lines, setLines] = useState(JURISDICTION_SEED);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("PASTE_")) return;
     setLoading(true);
-    fetch(`${APPS_SCRIPT_URL}?action=getData`).then((r) => r.json()).then((d) => d.ok && setLines(d.lines)).catch(() => {
+    fetch(`${APPS_SCRIPT_URL}?action=getData`).then((r) => r.json()).then((d) => {
+      if (d.ok && d.lines && d.lines.length) {
+        // Borrow lineKeys from the local seed by matching line name, since the
+        // Sheet doesn't know about map geometry \u2014 only officers/segments.
+        const merged = d.lines.map((live) => {
+          const seedMatch = JURISDICTION_SEED.find((s) => s.line === live.line);
+          return seedMatch ? { ...live, lineKeys: seedMatch.lineKeys } : live;
+        });
+        setLines(merged);
+      }
+    }).catch(() => {
     }).finally(() => setLoading(false));
   }, []);
-  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement(PageHeader, { eyebrow: "Page 3", title: "Line Maintenance Directory", subtitle: loading ? "Loading live data\u2026" : "Full contact details by line and division" }), /* @__PURE__ */ React.createElement("div", { className: "table-stack" }, lines.map((line) => /* @__PURE__ */ React.createElement("div", { key: line.line, className: "line-card" }, /* @__PURE__ */ React.createElement("div", { className: "line-card-head" }, /* @__PURE__ */ React.createElement("div", { className: "line-card-title" }, line.line), /* @__PURE__ */ React.createElement("div", { className: "line-card-length" }, line.length)), /* @__PURE__ */ React.createElement("table", { className: "mini-table" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Chainage"), /* @__PURE__ */ React.createElement("th", null, "Division"))), /* @__PURE__ */ React.createElement("tbody", null, line.segments.map((s, i) => /* @__PURE__ */ React.createElement("tr", { key: i }, /* @__PURE__ */ React.createElement("td", null, s.chainage), /* @__PURE__ */ React.createElement("td", null, s.division))))), /* @__PURE__ */ React.createElement("div", { className: "officer-grid" }, line.teams.flatMap((t) => t.members).map((m, i) => /* @__PURE__ */ React.createElement("div", { className: "officer-chip", key: i }, /* @__PURE__ */ React.createElement(User, { size: 14 }), " ", /* @__PURE__ */ React.createElement("span", null, m.name), " ", /* @__PURE__ */ React.createElement("span", { className: "muted" }, m.post), /* @__PURE__ */ React.createElement("a", { href: `tel:${m.mobile}` }, /* @__PURE__ */ React.createElement(Phone, { size: 12 }), " ", m.mobile))), line.teams.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "muted" }, "No officer assigned yet"))))));
+  return { lines, loading };
+}
+function Disclaimer() {
+  return /* @__PURE__ */ React.createElement("div", { className: "disclaimer" }, "Route paths are illustrative estimated alignments built from known line lengths and LILO points \u2014 ", /* @__PURE__ */ React.createElement("strong", null, "not surveyed tower/GPS data."), " Points marked ", /* @__PURE__ */ React.createElement("span", { className: "tag-approx" }, "approx."), " use a nearby town/taluka as a stand-in.");
+}
+function LmsdPage() {
+  const [selectedDivision, setSelectedDivision] = useState(null);
+  const { lines: jurisdictionData, loading } = useLiveJurisdiction();
+  const divisionInfo = useMemo(() => {
+    if (!selectedDivision) return null;
+    const matching = jurisdictionData.filter((j) => j.segments.some((s) => s.division === selectedDivision));
+    return { name: selectedDivision, matching };
+  }, [selectedDivision, jurisdictionData]);
+  return React.createElement("div", { className: "page" },
+    React.createElement(PageHeader, {
+      eyebrow: "Line Maps for 400 kV Karjat",
+      title: "LMSD Jurisdiction Map",
+      subtitle: loading ? "Loading live officer data\u2026" : "Coloured corridor along each line \u00b7 hover or click a stretch for its responsible LMSD office"
+    }),
+    React.createElement("div", { className: "split-layout" },
+      React.createElement(GridMap, {
+        substationKeys: KARJAT_SUBSTATION_KEYS,
+        lineKeys: KARJAT_LINE_KEYS,
+        showZones: true,
+        jurisdictionData,
+        showKm: true,
+        weatherEnabled: true,
+        onSelect: (k, type) => type === "zone" && setSelectedDivision(k),
+        height: "72vh",
+        downloadName: "karjat-lmsd-map"
+      }),
+      React.createElement("aside", { className: "side-panel" },
+        !divisionInfo
+          ? React.createElement("div", { className: "empty-hint" }, "Hover or click a coloured corridor stretch on the map to see its responsible LMSD office and officers here.")
+          : React.createElement("div", null,
+              React.createElement("h3", null, divisionInfo.name),
+              divisionInfo.matching.map((line) => React.createElement("div", { key: line.line, className: "jur-card" },
+                React.createElement("div", { className: "jur-line-name" }, line.line),
+                line.teams.flatMap((t) => t.members).map((m, i) => React.createElement("div", { key: i, className: "jur-officer" },
+                  React.createElement(User, { size: 13 }), " ", m.name, " ", React.createElement("span", { className: "muted" }, "\u00b7 ", m.post),
+                  React.createElement("div", { className: "jur-mobile-actions" },
+                    React.createElement("a", { className: "contact-btn", href: `tel:${m.mobile}` }, React.createElement(Phone, { size: 12 }), " Call"),
+                    React.createElement("a", { className: "contact-btn whatsapp", href: `https://wa.me/91${m.mobile}`, target: "_blank", rel: "noreferrer" }, "WhatsApp"),
+                    React.createElement("span", { className: "mono" }, m.mobile)
+                  )
+                ))
+              ))
+            )
+      )
+    ),
+    React.createElement(Disclaimer, null)
+  );
+}
+function MaintenancePage() {
+  const { lines, loading } = useLiveJurisdiction();
+  return React.createElement("div", { className: "page" },
+    React.createElement(PageHeader, {
+      eyebrow: "Line Maintenance Directory",
+      title: "Who's responsible, where",
+      subtitle: loading ? "Loading live data from the Sheet\u2026" : "Km length allotted with the LMSD officer(s) for that stretch \u2014 kept live from LMSD Teams Management"
+    }),
+    React.createElement("div", { className: "table-stack" },
+      lines.map((line) => {
+        const segTeamAligned = line.segments.length === line.teams.length;
+        const allDivisions = [...new Set(line.segments.map((s) => s.division))];
+        return React.createElement("div", { key: line.line, className: "line-card maint-card" },
+          React.createElement("div", { className: "line-card-head" },
+            React.createElement("div", { className: "line-card-title" }, line.line),
+            React.createElement("div", { className: "line-card-length" }, line.length)
+          ),
+          React.createElement("div", { className: "maint-layout" },
+            React.createElement("table", { className: "mini-table maint-table" },
+              React.createElement("thead", null,
+                React.createElement("tr", null,
+                  React.createElement("th", null, "Km length allotted"),
+                  React.createElement("th", null, "LMSD division"),
+                  React.createElement("th", null, "Officer(s) responsible")
+                )
+              ),
+              React.createElement("tbody", null,
+                line.segments.map((s, i) => {
+                  const team = segTeamAligned ? line.teams[i] : null;
+                  const officers = team ? team.members : line.teams.flatMap((t) => t.members);
+                  return React.createElement("tr", { key: i },
+                    React.createElement("td", { className: "mono" }, s.chainage),
+                    React.createElement("td", null, s.division),
+                    React.createElement("td", null,
+                      officers.length === 0
+                        ? React.createElement("span", { className: "muted" }, "No officer assigned yet")
+                        : React.createElement("div", { className: "officer-stack" },
+                            officers.map((m, j) => React.createElement("div", { key: j, className: "officer-line" },
+                              React.createElement(User, { size: 13 }), " ",
+                              React.createElement("span", null, m.name), " ",
+                              React.createElement("span", { className: "muted" }, "\u00b7 ", m.post),
+                              React.createElement("span", { className: "jur-mobile-actions" },
+                                React.createElement("a", { className: "contact-btn", href: `tel:${m.mobile}` }, React.createElement(Phone, { size: 11 }), " Call"),
+                                React.createElement("a", { className: "contact-btn whatsapp", href: `https://wa.me/91${m.mobile}`, target: "_blank", rel: "noreferrer" }, "WhatsApp")
+                              )
+                            ))
+                          )
+                    )
+                  );
+                })
+              )
+            ),
+            allDivisions.length > 1 && React.createElement("div", { className: "multi-lmsd-col" },
+              React.createElement("div", { className: "multi-lmsd-title" }, "LMSDs on this line"),
+              allDivisions.map((d, i) => React.createElement("div", { key: i, className: "multi-lmsd-chip", style: { borderColor: divisionColor(d) } }, d))
+            )
+          )
+        );
+      })
+    )
+  );
 }
 function CoordinatesPage() {
   const [filter, setFilter] = useState("all");
@@ -1010,6 +1269,158 @@ function StatewidePage() {
   ), /* @__PURE__ */ React.createElement(Disclaimer, null));
 }
 const WEATHER_TABS = KARJAT_SUBSTATION_KEYS.filter((k) => SUBSTATIONS[k].kv !== "tee");
+const PRINT_SCOPES = {
+  karjat400: {
+    label: "400 kV \u2014 Karjat network",
+    subKeys: ["karjat", "lilo", "girawali", "lonikand2", "puneeast"],
+    lineKeysScope: ["karjat_lilo", "lilo_lonikand2", "lilo_girawali", "karjat_puneeast"],
+    kvFilter: ["400", "765", "planned"],
+    emphasize: ["karjat_lilo", "lilo_lonikand2", "lilo_girawali", "karjat_puneeast"],
+    overall: false,
+    fileName: "400kv-karjat-network",
+    title: "400 kV Lines & Buses \u2014 Karjat Network",
+    subtitle: "Every 400 kV bus and line reached from 400 kV Karjat SS"
+  },
+  karjat220: {
+    label: "220 kV \u2014 Karjat network",
+    subKeys: ["karjat", "ahilyanagar", "belwandi", "bhigwan", "shirsuphal", "jeur"],
+    lineKeysScope: ["karjat_cutab", "cutab_belwandi", "cutab_ahilyanagar", "karjat_bhigwan", "karjat_shirsuphal", "karjat_jeur"],
+    kvFilter: ["220"],
+    emphasize: ["karjat_cutab", "cutab_belwandi", "cutab_ahilyanagar", "karjat_bhigwan", "karjat_shirsuphal", "karjat_jeur"],
+    overall: false,
+    fileName: "220kv-karjat-network",
+    title: "220 kV Lines & Buses \u2014 Karjat Network",
+    subtitle: "Every 220 kV bus and line reached from 400 kV Karjat SS"
+  },
+  overall400: {
+    label: "400 kV \u2014 Overall",
+    subKeys: null,
+    lineKeysScope: null,
+    kvFilter: ["400", "765", "planned"],
+    emphasize: ["karjat_lilo", "lilo_lonikand2", "lilo_girawali", "karjat_puneeast"],
+    overall: true,
+    fileName: "400kv-overall-network",
+    title: "Overall 400 kV Lines & Buses",
+    subtitle: "Statewide 400/765 kV network \u2014 Karjat's own lines highlighted, others shown thin"
+  },
+  overall220: {
+    label: "220 kV \u2014 Overall",
+    subKeys: null,
+    lineKeysScope: null,
+    kvFilter: ["220"],
+    emphasize: ["karjat_cutab", "cutab_belwandi", "cutab_ahilyanagar", "karjat_bhigwan", "karjat_shirsuphal", "karjat_jeur"],
+    overall: true,
+    fileName: "220kv-overall-network",
+    title: "Overall 220 kV Lines & Buses",
+    subtitle: "Statewide 220 kV network \u2014 Karjat's own lines highlighted, others shown thin"
+  }
+};
+function PrintMapPage({ scopeKey }) {
+  const scope = PRINT_SCOPES[scopeKey];
+  const [orientation, setOrientation] = useState("landscape");
+  const [downloading, setDownloading] = useState(false);
+  const sheetRef = useRef(null);
+  const { lines: jurisdictionData } = useLiveJurisdiction();
+  const relevantLmsd = useMemo(() => {
+    if (!scope.lineKeysScope) {
+      // Overall pages: still show the Karjat-relevant LMSD assignments below,
+      // since that's the only jurisdiction data this portal tracks.
+      return jurisdictionData.filter((j) => (j.lineKeys || []).some((k) => scope.emphasize.includes(k)));
+    }
+    return jurisdictionData.filter((j) => (j.lineKeys || []).some((k) => scope.lineKeysScope.includes(k)));
+  }, [jurisdictionData, scope]);
+  const handlePrint = () => {
+    document.body.setAttribute("data-print-orientation", orientation);
+    window.print();
+  };
+  const handleDownloadPdf = async () => {
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(sheetRef.current, { useCORS: true, allowTaint: true, scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation, unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
+      const w = canvas.width * ratio, h = canvas.height * ratio;
+      pdf.addImage(imgData, "PNG", (pageW - w) / 2, (pageH - h) / 2, w, h);
+      pdf.save(`${scope.fileName}-${orientation}.pdf`);
+    } catch (e) {
+      alert("Could not export this view (some tile providers block canvas export). Use the Print button and \u201cSave as PDF\u201d in the print dialog instead.");
+      console.error(e);
+    } finally {
+      setDownloading(false);
+    }
+  };
+  return React.createElement("div", { className: "print-page-wrap" },
+    React.createElement("div", { className: "print-toolbar no-print" },
+      React.createElement("div", { className: "layer-switch" },
+        ["portrait", "landscape"].map((o) => React.createElement("button", { key: o, className: orientation === o ? "active" : "", onClick: () => setOrientation(o) }, o === "portrait" ? "Portrait" : "Landscape"))
+      ),
+      React.createElement("button", { className: "download-btn", onClick: handlePrint }, "\ud83d\uddb6 Print"),
+      React.createElement("button", { className: "download-btn", onClick: handleDownloadPdf, disabled: downloading }, downloading ? "Preparing\u2026" : "\u2B07 Download PDF")
+    ),
+    React.createElement("div", { ref: sheetRef, className: `print-sheet orient-${orientation}` },
+      React.createElement("div", { className: "print-sheet-head" },
+        React.createElement("div", null,
+          React.createElement("div", { className: "print-sheet-title" }, scope.title),
+          React.createElement("div", { className: "print-sheet-subtitle" }, scope.subtitle)
+        ),
+        React.createElement("div", { className: "print-sheet-brand" }, "Line Maps for 400 kV Karjat")
+      ),
+      React.createElement("div", { className: "print-map-frame" },
+        React.createElement(GridMap, {
+          substationKeys: scope.subKeys,
+          lineKeys: scope.lineKeysScope,
+          kvFilter: scope.kvFilter,
+          emphasizeKeys: scope.emphasize,
+          showGraticule: true,
+          height: orientation === "portrait" ? "420px" : "480px",
+          center: scope.overall ? [18.6, 75.4] : [18.6, 75.0],
+          zoom: scope.overall ? 7 : 8,
+          downloadName: scope.fileName
+        })
+      ),
+      React.createElement("div", { className: "print-lmsd-section" },
+        React.createElement("div", { className: "print-lmsd-heading" }, "LMSD responsible \u2014 Karjat lines shown above"),
+        relevantLmsd.length === 0
+          ? React.createElement("div", { className: "muted" }, "No LMSD assignment on record for this network yet.")
+          : React.createElement("table", { className: "print-lmsd-table" },
+              React.createElement("thead", null,
+                React.createElement("tr", null,
+                  React.createElement("th", null, "Line"),
+                  React.createElement("th", null, "Chainage"),
+                  React.createElement("th", null, "LMSD Division")
+                )
+              ),
+              React.createElement("tbody", null,
+                relevantLmsd.flatMap((line) => line.segments.map((s, i) => React.createElement("tr", { key: line.line + i },
+                  React.createElement("td", null, line.line),
+                  React.createElement("td", { className: "mono" }, s.chainage),
+                  React.createElement("td", null, s.division)
+                )))
+              )
+            )
+      ),
+      React.createElement("div", { className: "print-sheet-foot" }, "Working reference diagram \u2014 not an official MSETCL/POWERGRID drawing. Line paths are illustrative alignments, not surveyed tower/GPS data.")
+    )
+  );
+}
+function PrintMapsPage() {
+  const [tab, setTab] = useState("karjat400");
+  return React.createElement("div", { className: "page" },
+    React.createElement(PageHeader, {
+      eyebrow: "Printable line diagrams",
+      title: "Print Maps",
+      subtitle: "Four A4-ready network diagrams \u2014 print directly or download as PDF"
+    }),
+    React.createElement("div", { className: "chip-row no-print" },
+      Object.entries(PRINT_SCOPES).map(([key, s]) => React.createElement("button", { key, className: tab === key ? "chip active" : "chip", onClick: () => setTab(key) }, s.label))
+    ),
+    React.createElement(PrintMapPage, { key: tab, scopeKey: tab })
+  );
+}
 function WeatherPage() {
   const [active, setActive] = useState("karjat");
   const [data, setData] = useState({});
@@ -1639,11 +2050,11 @@ function EditorPage() {
 }
 
 const ROUTES = {
-  "": { label: "Home Map", comp: HomePage },
-  "lmsd": { label: "LMSD Map", comp: LmsdPage },
+  "": { label: "LMSD Map", comp: LmsdPage },
   "maintenance": { label: "Maintenance", comp: MaintenancePage },
   "coordinates": { label: "Coordinates", comp: CoordinatesPage },
   "statewide": { label: "Statewide", comp: StatewidePage },
+  "printmaps": { label: "Print Maps", comp: PrintMapsPage },
   "weather": { label: "Weather", comp: WeatherPage },
   "teams": { label: "LMSD Teams", comp: TeamsPage },
   "editor": { label: "Line Editor", comp: EditorPage }
@@ -1656,7 +2067,7 @@ function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
   const Current = (ROUTES[route] || ROUTES[""]).comp;
-  return /* @__PURE__ */ React.createElement("div", { className: "app-shell" }, /* @__PURE__ */ React.createElement("nav", { className: "topnav" }, /* @__PURE__ */ React.createElement("div", { className: "brand" }, /* @__PURE__ */ React.createElement("span", { className: "brand-dot" }), "400 kV Karjat Portal"), /* @__PURE__ */ React.createElement("div", { className: "nav-links" }, Object.entries(ROUTES).map(([path, r]) => /* @__PURE__ */ React.createElement("a", { key: path, href: `#/${path}`, className: route === path ? "active" : "" }, r.label)))), /* @__PURE__ */ React.createElement("main", null, /* @__PURE__ */ React.createElement(Current, null)), /* @__PURE__ */ React.createElement("footer", { className: "app-footer" }, "Working reference portal built from field-supplied data ", "\u2014", " not an official MSETCL/POWERGRID system."));
+  return /* @__PURE__ */ React.createElement("div", { className: "app-shell" }, /* @__PURE__ */ React.createElement("nav", { className: "topnav" }, /* @__PURE__ */ React.createElement("div", { className: "brand" }, /* @__PURE__ */ React.createElement("span", { className: "brand-dot" }), "Line Maps for 400 kV Karjat"), /* @__PURE__ */ React.createElement("div", { className: "nav-links" }, Object.entries(ROUTES).map(([path, r]) => /* @__PURE__ */ React.createElement("a", { key: path, href: `#/${path}`, className: route === path ? "active" : "" }, r.label)))), /* @__PURE__ */ React.createElement("main", null, /* @__PURE__ */ React.createElement(Current, null)), /* @__PURE__ */ React.createElement("footer", { className: "app-footer" }, "Working reference portal built from field-supplied data ", "\u2014", " not an official MSETCL/POWERGRID system."));
 }
 try {
   ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
