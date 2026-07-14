@@ -26,6 +26,34 @@ A static, zero-build React site (React + Babel loaded via CDN, so there's no
 No build tooling, no `package.json` needed — `index.html` loads React,
 Babel (for in-browser JSX), and Leaflet straight from CDNs.
 
+## NEW: Print Maps (`#/printmaps`)
+
+Four A4-ready diagrams, one per tab:
+
+1. **400 kV — Karjat network** — every 400/765 kV bus and line reached from
+   400 kV Karjat SS (Lonikand I & II, Girawali, the planned Pune East tie).
+2. **220 kV — Karjat network** — every 220 kV bus/line reached from Karjat
+   (Ahilyanagar, Bhose/Belwandi, Bhigwan, Shirsuphal, Jeur).
+3. **Overall 400 kV** — the full statewide 400/765 kV picture, with Karjat's
+   own lines drawn bold/full-colour and every other utility's line drawn thin
+   and dimmed, so Karjat's network still reads clearly against the wider grid.
+4. **Overall 220 kV** — same idea, statewide 220 kV.
+
+Each tab has:
+- A **Portrait/Landscape** toggle sized to true A4 (210×297mm).
+- A light lat/lon **coordinate graticule** overlaid on the map for a
+  surveyed-diagram feel.
+- An **LMSD responsibility table** underneath, listing each Karjat line's
+  chainage and assigned division — pulled live from the same Sheet as the
+  Maintenance Directory.
+- **Print** (opens your browser's print dialog, pre-sized to the sheet) and
+  **Download PDF** (renders the sheet to a true A4 PDF) buttons.
+
+Note: since GitHub Pages' satellite/hybrid tiles sometimes block canvas
+export over CORS, if "Download PDF" ever fails, the Print button's browser
+"Save as PDF" is the reliable fallback — it always works because it's a real
+print, not a canvas screenshot.
+
 ## NEW: Line & Substation Editor (`#/editor`)
 
 A full editing page has been added:
