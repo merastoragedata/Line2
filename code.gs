@@ -1,370 +1,1670 @@
-/**
- * ============================================================================
- *  400 kV KARJAT — LMSD TEAM DATABASE (Google Apps Script backend)
- * ============================================================================
- *  What this does
- *  --------------
- *  1. On first run (INIT_) it creates a Google Sheet ("Karjat_LMSD_Database")
- *     inside a Drive folder ("Karjat_400kV_Portal"), with one tab per line,
- *     and auto-populates it with the jurisdiction data you already gave me.
- *  2. Exposes a small JSON API (doGet / doPost) so the static website can:
- *       - action=getData      -> read all lines + teams + members
- *       - action=saveTeams    -> overwrite the teams for one line (validated:
- *                                 max 5 teams/line, 1-5 members/team)
- *       - action=init         -> (re)build the sheet from scratch
- *
- *  DEPLOY STEPS (do this once)
- *  ----------------------------
- *  1. Go to https://script.google.com -> New project. Paste this whole file
- *     in as Code.gs (replace the default content).
- *  2. Click Deploy -> New deployment -> type: "Web app".
- *       - Execute as: Me
- *       - Who has access: Anyone  (or "Anyone with Google account" if you
- *         want to restrict edits to your org)
- *  3. Click Deploy, authorize the permissions it asks for.
- *  4. Copy the Web App URL it gives you (ends in /exec).
- *  5. Paste that URL into `data.js` in the website files, where it says
- *         const APPS_SCRIPT_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
- *  6. Open the deployed URL once in your browser with ?action=init at the
- *     end (e.g. https://script.google.com/macros/s/XXXX/exec?action=init)
- *     to create and auto-populate the spreadsheet the first time.
- * ============================================================================
- */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>400 kV Karjat — Grid Portal</title>
 
-const FOLDER_NAME = "Karjat_400kV_Portal";
-const SHEET_NAME = "Karjat_LMSD_Database";
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-// ---- Seed data: exactly what you gave me, used to auto-populate on init ----
-const SEED_LINES = [
+<style>
+:root {
+  --bg: #0c1117;
+  --panel: #141b24;
+  --panel2: #181f29;
+  --border: #26313e;
+  --ink: #e9edf2;
+  --ink-muted: #8b98a8;
+  --pink: #ef4d8f;
+  --cyan: #42d6c8;
+  --amber: #f2a53c;
+  --purple: #a78bfa;
+  --green: #4ade80;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: "Inter", system-ui, sans-serif; }
+h1, h2, h3 { font-family: "Space Grotesk", sans-serif; margin: 0; }
+.mono, .mono td { font-family: "JetBrains Mono", monospace; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+
+.app-shell { min-height: 100vh; display: flex; flex-direction: column; }
+
+.topnav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #10161e, #0c1117);
+  position: sticky; top: 0; z-index: 1000; flex-wrap: wrap; gap: 10px;
+}
+.brand { font-family: "Space Grotesk"; font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 12px var(--pink); }
+.nav-links { display: flex; gap: 4px; flex-wrap: wrap; }
+.nav-links a { font-size: 13px; padding: 7px 12px; border-radius: 999px; color: var(--ink-muted); font-family: "JetBrains Mono"; }
+.nav-links a:hover { color: var(--ink); background: rgba(255,255,255,0.04); }
+.nav-links a.active { color: var(--cyan); background: rgba(66,214,200,0.1); }
+
+main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin: 0 auto; }
+.app-footer { text-align: center; font-size: 12px; color: var(--ink-muted); padding: 18px; border-top: 1px solid var(--border); }
+
+.page-header { margin-bottom: 18px; }
+.page-header .eyebrow { font-family: "JetBrains Mono"; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--cyan); }
+.page-header h1 { font-size: 26px; margin-top: 4px; }
+.page-header p { color: var(--ink-muted); margin-top: 6px; font-size: 14px; }
+.page-header.light .eyebrow, .page-header.light p { color: rgba(255,255,255,0.75); }
+.page-header.light h1 { color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.3); }
+
+.disclaimer { margin-top: 14px; font-size: 12.5px; color: var(--ink-muted); background: rgba(66,214,200,0.06); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+.tag-approx { font-size: 10px; background: rgba(242,165,60,0.15); color: var(--amber); padding: 1px 6px; border-radius: 6px; }
+
+/* ---------------- Map ---------------- */
+.gridmap-wrap { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+.gridmap-canvas { width: 100%; height: 100%; background: #0c1117; }
+.map-controls { position: absolute; top: 12px; left: 12px; z-index: 500; display: flex; flex-direction: column; gap: 8px; }
+.layer-switch { display: flex; background: rgba(12,17,23,0.85); backdrop-filter: blur(6px); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+.layer-switch button { border: none; background: transparent; color: var(--ink-muted); padding: 8px 14px; font-size: 12.5px; font-family: "JetBrains Mono"; }
+.layer-switch button.active { background: var(--cyan); color: #06201d; font-weight: 600; }
+.opacity-slider { background: rgba(12,17,23,0.85); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-muted); }
+.download-btn {
+  position: absolute; bottom: 14px; right: 14px; z-index: 500;
+  background: var(--pink); color: #2b0716; border: none; font-weight: 700;
+  padding: 10px 16px; border-radius: 999px; font-size: 13px; box-shadow: 0 6px 20px rgba(239,77,143,0.35);
+}
+.download-btn:disabled { opacity: .6; }
+
+.leaflet-popup-content-wrapper { background: var(--panel); color: var(--ink); border-radius: 10px; }
+.leaflet-popup-tip { background: var(--panel); }
+.popup-card { font-family: "Inter"; font-size: 12.5px; min-width: 160px; }
+.popup-title { font-weight: 700; font-family: "Space Grotesk"; margin-bottom: 2px; }
+.popup-sub { color: var(--ink-muted); font-size: 11.5px; }
+.popup-weather { margin-top: 6px; color: var(--cyan); }
+.popup-officer { padding: 3px 0; font-size: 11.5px; }
+
+.split-layout { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .split-layout { grid-template-columns: 1fr; } }
+.side-panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; height: 70vh; overflow-y: auto; }
+.empty-hint { color: var(--ink-muted); font-size: 13px; line-height: 1.5; }
+.empty-hint.light { color: rgba(255,255,255,0.8); }
+.jur-card { border-top: 1px solid var(--border); padding: 10px 0; }
+.jur-line-name { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+.jur-officer { font-size: 12.5px; color: var(--ink-muted); padding: 3px 0; }
+.jur-mobile { font-family: "JetBrains Mono"; font-size: 11.5px; padding-left: 20px; color: var(--cyan); }
+
+/* ---------------- Tables ---------------- */
+.table-stack { display: flex; flex-direction: column; gap: 14px; }
+.line-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+.line-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+.line-card-title { font-family: "Space Grotesk"; font-weight: 600; font-size: 15px; }
+.line-card-length { font-family: "JetBrains Mono"; color: var(--cyan); font-size: 13px; }
+.mini-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 12.5px; }
+.mini-table th, .mini-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.mini-table th { color: var(--ink-muted); font-weight: 500; font-family: "JetBrains Mono"; font-size: 11px; text-transform: uppercase; }
+.officer-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.officer-chip { background: var(--panel2); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.officer-chip a { color: var(--cyan); font-family: "JetBrains Mono"; margin-left: 4px; }
+.muted { color: var(--ink-muted); }
+
+.chip-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.chip { background: var(--panel2); border: 1px solid var(--border); color: var(--ink-muted); border-radius: 999px; padding: 6px 14px; font-size: 12.5px; }
+.chip.active { color: var(--cyan); border-color: var(--cyan); background: rgba(66,214,200,0.08); }
+.full-table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: var(--radius); overflow: hidden; }
+.full-table th, .full-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; text-align: left; }
+.full-table th { background: var(--panel2); font-family: "JetBrains Mono"; font-size: 11px; text-transform: uppercase; color: var(--ink-muted); }
+
+/* ---------------- Weather badges on map ---------------- */
+.wbadge { font-family: "JetBrains Mono"; font-size: 11px; background: rgba(12,17,23,0.85); border: 1px solid var(--border); color: var(--ink); border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
+
+/* ---------------- Weather page ---------------- */
+.weather-page { position: relative; margin: -24px -28px; padding: 24px 28px 40px; min-height: calc(100vh - 130px); overflow: hidden; transition: background 1s ease; }
+.weather-page.mood-sunny { background: linear-gradient(180deg,#4aa8ff 0%, #bfe3ff 55%, #ffe9a8 100%); }
+.weather-page.mood-cloudy { background: linear-gradient(180deg,#5b6b7c 0%, #8b98a8 60%, #c7cdd4 100%); }
+.weather-page.mood-rain { background: linear-gradient(180deg,#232c38 0%, #384656 60%, #4b5b6b 100%); }
+.weather-page.mood-storm { background: linear-gradient(180deg,#141a22 0%, #232c38 60%, #384656 100%); }
+.weather-page.mood-fog { background: linear-gradient(180deg,#8a93a0 0%, #b7bfc9 100%); }
+.weather-page.mood-snow { background: linear-gradient(180deg,#7f97b0 0%, #dfe9f2 100%); }
+.weather-bg-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.weather-content { position: relative; z-index: 2; }
+
+.weather-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0; }
+.wtab { background: rgba(0,0,0,0.25); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 7px 14px; font-size: 12.5px; font-family: "JetBrains Mono"; }
+.wtab.active { background: #fff; color: #111; font-weight: 700; }
+
+.weather-detail { background: rgba(10,14,20,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius); padding: 20px; color: #fff; }
+.weather-now { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
+.temp-now { font-family: "Space Grotesk"; font-size: 42px; font-weight: 700; line-height: 1; }
+.cond-now { font-size: 14px; opacity: .9; }
+.loc-now { font-size: 12px; opacity: .7; margin-top: 2px; }
+.hourly-strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 18px; }
+.hour-chip { background: rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px; text-align: center; min-width: 64px; }
+.hour-time { font-size: 11px; opacity: .8; }
+.hour-temp { font-family: "JetBrains Mono"; font-weight: 600; margin-top: 4px; }
+.hour-pop { font-size: 10.5px; opacity: .7; }
+.daily-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); gap: 8px; }
+.day-chip { background: rgba(255,255,255,0.08); border-radius: 10px; padding: 10px; text-align: center; }
+.day-name { font-size: 11px; opacity: .85; margin-bottom: 4px; }
+.day-temp { font-family: "JetBrains Mono"; font-size: 12px; margin-top: 4px; }
+.day-pop { font-size: 10px; opacity: .7; }
+.all-lines-heading { color: #fff; margin: 26px 0 12px; font-size: 16px; }
+
+/* weather FX */
+.fx-rain span { position: absolute; top: -10%; width: 2px; height: 60px; background: linear-gradient(180deg, transparent, rgba(200,220,255,0.7)); animation-name: fall; animation-timing-function: linear; animation-iteration-count: infinite; }
+@keyframes fall { to { transform: translateY(120vh); } }
+.fx-sun .sun-glow { position: absolute; top: -80px; right: 60px; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(255,235,150,0.9), transparent 70%); filter: blur(4px); animation: pulseSun 4s ease-in-out infinite; }
+@keyframes pulseSun { 0%,100% { opacity: .8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+.fx-cloud .cloud { position: absolute; background: rgba(255,255,255,0.5); border-radius: 50%; filter: blur(2px); animation: drift linear infinite; }
+.fx-cloud .c1 { width: 220px; height: 60px; top: 8%; animation-duration: 60s; }
+.fx-cloud .c2 { width: 160px; height: 46px; top: 22%; animation-duration: 80s; animation-delay: -20s; }
+.fx-cloud .c3 { width: 260px; height: 70px; top: 4%; animation-duration: 100s; animation-delay: -50s; }
+@keyframes drift { from { transform: translateX(-30%); } to { transform: translateX(130vw); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-rain span, .fx-sun .sun-glow, .fx-cloud .cloud { animation: none !important; }
+}
+
+/* ---------------- Teams editor ---------------- */
+.edit-btn, .save-btn, .cancel-btn, .add-link, .add-team-btn { border: 1px solid var(--border); background: var(--panel2); color: var(--ink); border-radius: 8px; padding: 6px 12px; font-size: 12.5px; }
+.save-btn { background: var(--cyan); color: #06201d; border: none; font-weight: 700; }
+.edit-actions { display: flex; gap: 8px; }
+.teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: 12px; }
+.team-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+.team-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.team-name-input { background: transparent; border: none; color: var(--ink); font-weight: 700; font-family: "Space Grotesk"; font-size: 13px; width: 100%; }
+.team-name-input:disabled { opacity: .9; }
+.member-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.member-row input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border); color: var(--ink); border-radius: 6px; padding: 5px 8px; font-size: 12px; }
+.member-row input:disabled { opacity: .8; background: transparent; border-color: transparent; padding-left: 0; }
+.x-btn { background: transparent; border: none; color: #f87171; font-size: 16px; line-height: 1; padding: 0 4px; }
+.add-link { display: block; margin-top: 4px; font-size: 11.5px; color: var(--cyan); background: transparent; border: none; padding: 4px 0; }
+.add-team-btn { align-self: start; height: fit-content; border-style: dashed; color: var(--ink-muted); }
+
+/* ---------------- Line & Substation Editor ---------------- */
+.editor-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.editor-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-muted); background: var(--panel2); border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; }
+.editor-layout { display: grid; grid-template-columns: 1fr 340px; gap: 16px; align-items: start; }
+@media (max-width: 980px) { .editor-layout { grid-template-columns: 1fr; } }
+.editor-side { max-height: 78vh; overflow-y: auto; }
+.editor-h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); margin: 14px 0 8px; font-family: "JetBrains Mono"; }
+.editor-h3:first-child { margin-top: 0; }
+.editor-line-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.editor-line-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; font-size: 12.5px; cursor: pointer; border: 1px solid transparent; }
+.editor-line-item:hover { background: var(--panel2); }
+.editor-line-item.active { background: rgba(66,214,200,0.1); border-color: var(--cyan); }
+.editor-line-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.editor-field-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 12.5px; }
+.editor-field-row label { color: var(--ink-muted); }
+.editor-field-row select, .editor-field-row input[type="text"], .editor-field-row input[type="number"] { background: var(--bg); border: 1px solid var(--border); color: var(--ink); border-radius: 6px; padding: 5px 8px; font-size: 12px; flex: 1; }
+.editor-field-row input[type="color"] { width: 34px; height: 26px; border: 1px solid var(--border); border-radius: 6px; background: transparent; padding: 0; }
+.editor-sub-list { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; }
+.editor-sub-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; font-size: 11.5px; }
+.editor-sub-item:hover { background: var(--panel2); }
+.editor-sub-name { flex: 1; }
+.editor-sub-coords { color: var(--ink-muted); font-size: 10.5px; }
+.tower-num { position: relative; left: -50%; top: -26px; background: #0c1117; color: #fff; font-family: "JetBrains Mono", monospace; font-weight: 700; line-height: 1; border-radius: 4px; border: 1.5px solid rgba(255,255,255,0.5); white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.5); pointer-events: none; }
+.layer-switch-single { background: var(--panel2); border: 1px solid var(--border); color: var(--ink-muted); border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+.layer-switch-single.active { background: rgba(66,214,200,0.14); border-color: var(--cyan); color: var(--cyan); }
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="boot-status" style="padding:40px;font-family:monospace;color:#8b98a8;background:#0c1117;min-height:100vh;">
+    Loading 400 kV Karjat Grid Portal…
+  </div>
+</div>
+
+<script>
+  window.addEventListener('error', function (e) {
+    var root = document.getElementById('root');
+    if (root) {
+      root.innerHTML =
+        '<div style="padding:40px;font-family:monospace;color:#f87171;background:#0c1117;min-height:100vh;white-space:pre-wrap;">' +
+        '<h2 style="color:#fff;">The page hit an error while loading</h2>' +
+        '<div>' + (e.message || 'Unknown error') + '</div>' +
+        '<div style="margin-top:10px;color:#8b98a8;">' + (e.filename || '') + (e.lineno ? (':' + e.lineno) : '') + '</div>' +
+        '</div>';
+    }
+  });
+
+  function cdnFailMsg(name) {
+    return function () {
+      var root = document.getElementById('root');
+      if (root) {
+        root.innerHTML =
+          '<div style="padding:40px;font-family:monospace;color:#f87171;background:#0c1117;min-height:100vh;">' +
+          '<h2 style="color:#fff;">Could not load ' + name + ' from unpkg.com</h2>' +
+          '<p style="color:#8b98a8;">This usually means the CDN is blocked on this network (corporate firewall, ' +
+          'ad-blocker, or offline). Try a different network, disable content-blocking extensions for this site, ' +
+          'or open this page in an incognito window.</p></div>';
+      }
+    };
+  }
+
+  setTimeout(function () {
+    var boot = document.getElementById('boot-status');
+    if (!boot) return;
+    var missing = [];
+    if (typeof React === 'undefined') missing.push('React');
+    if (typeof ReactDOM === 'undefined') missing.push('ReactDOM');
+    if (typeof L === 'undefined') missing.push('Leaflet');
+    var root = document.getElementById('root');
+    root.innerHTML =
+      '<div style="padding:40px;font-family:monospace;color:#f2a53c;background:#0c1117;min-height:100vh;">' +
+      '<h2 style="color:#fff;">Still loading after 10 seconds</h2>' +
+      (missing.length
+        ? '<p>These CDN scripts never loaded: <b>' + missing.join(', ') + '</b>.</p>' +
+          '<p style="color:#8b98a8;">Check your network/ad-blocker, or press F12 and look at the Network tab ' +
+          'for any request shown in red.</p>'
+        : '<p>All required scripts loaded, but the app never mounted. Press F12 and check the Console tab ' +
+          'for a red error message, and send that back.</p>') +
+      '</div>';
+  }, 10000);
+</script>
+
+<!-- React (CDN, no build step needed) -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" onerror="cdnFailMsg('React')()"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" onerror="cdnFailMsg('ReactDOM')()"></script>
+
+<!-- Leaflet (open-source maps, no API key required) -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="cdnFailMsg('Leaflet')()"></script>
+
+<!-- Export-to-PDF -->
+<script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js" onerror="cdnFailMsg('html2canvas')()"></script>
+<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js" onerror="cdnFailMsg('jsPDF')()"></script>
+
+<!-- App code: precompiled from JSX to plain JavaScript with esbuild ahead of time (not Babel-in-browser).
+     Verified with `node --check` before shipping, so no browser JSX transform step is needed or can fail. -->
+<script>
+const { useEffect, useRef, useState, useCallback, useMemo } = React;
+const APPS_SCRIPT_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+const DEFAULT_SUBSTATIONS = {
+  // ---- Core 400kV Karjat network (confirmed exact pins) ----
+  karjat: { name: "400 kV Karjat SS", lat: 18.448778, lon: 74.746306, kv: "400", group: "karjat" },
+  lilo: { name: "LILO / Tee point", lat: 18.494797, lon: 74.758146, kv: "tee", group: "karjat" },
+  girawali: { name: "400 kV Girawali SS", lat: 18.747447, lon: 76.457604, kv: "400", group: "karjat" },
+  lonikand2: { name: "400 kV Lonikand-II SS", lat: 18.639778, lon: 74.040083, kv: "400", group: "karjat" },
+  puneeast: { name: "765/400 kV Pune East SS", lat: 18.729387, lon: 75.020199, kv: "planned", group: "karjat" },
+  ahilyanagar: { name: "220 kV Ahilyanagar SS", lat: 19.049833, lon: 74.7005, kv: "220", group: "karjat" },
+  belwandi: { name: "220 kV Bhose / Belwandi SS", lat: 18.685139, lon: 74.62575, kv: "220", group: "karjat" },
+  bhigwan: { name: "220 kV Bhigwan SS", lat: 18.304861, lon: 74.758389, kv: "220", group: "karjat" },
+  shirsuphal: { name: "220 kV Shirsuphal SS", lat: 18.320306, lon: 74.56975, kv: "220", group: "karjat" },
+  jeur: { name: "220 kV Jeur SS (I & II)", lat: 18.262806, lon: 75.151167, kv: "220", group: "karjat" },
+  cut_ab: { name: "(internal) Ahilyanagar-Belwandi historic cut pt", lat: 18.859, lon: 74.66, kv: "tee", group: "karjat", hidden: true },
+  // ---- Statewide 400kV grid (from uploaded connectivity diagram) ----
+  kharghar: { name: "400 kV Kharghar SS", lat: 19.038129, lon: 73.062497, kv: "400", group: "state400" },
+  kalwa: { name: "400 kV Kalwa SS", lat: 19.167205, lon: 72.994114, kv: "400", group: "state400" },
+  punepg: { name: "400 kV Pune PG SS", lat: 18.794584, lon: 73.697426, kv: "400", group: "state400" },
+  chakan: { name: "400 kV Chakan SS", lat: 18.740187, lon: 73.841062, kv: "400", group: "state400" },
+  shikrapur: { name: "765 kV Shikrapur PG SS", lat: 18.716774, lon: 74.173417, kv: "765", group: "state400" },
+  lonikand1: { name: "400 kV Lonikand-I SS", lat: 18.637, lon: 74.0385, kv: "400", group: "state400" },
+  jejuri: { name: "400 kV Jejuri SS", lat: 18.282896, lon: 74.138483, kv: "400", group: "state400" },
+  karad: { name: "400 kV Karad SS", lat: 17.302972, lon: 74.140245, kv: "400", group: "state400" },
+  kiv: { name: "400 kV K-IV SS", lat: 17.297316, lon: 74.139067, kv: "400", group: "state400" },
+  kalamb: { name: "400 kV Kalamb SS", lat: 18.3958, lon: 76.0894, kv: "400", group: "state400", approx: true },
+  chandrapur1: { name: "400 kV Chandrapur-I SS", lat: 19.986132, lon: 79.289196, kv: "400", group: "state400", approx: true },
+  chandrapur2: { name: "400 kV Chandrapur-II SS", lat: 19.99, lon: 79.292, kv: "400", group: "state400", approx: true },
+  kumbhargaon: { name: "400 kV Kumbhargaon SS", lat: 19.916, lon: 79.117, kv: "400", group: "state400", approx: true },
+  // ---- Statewide 220kV grid (from uploaded Karjat-220kV-bus diagram) ----
+  phaltan: { name: "220 kV Phaltan SS", lat: 18.013506, lon: 74.332742, kv: "220", group: "state220" },
+  lonand: { name: "220 kV Lonand SS", lat: 17.93, lon: 74.15, kv: "220", group: "state220", approx: true },
+  bothe: { name: "220 kV Bothe SS", lat: 17.96, lon: 74.4, kv: "220", group: "state220", approx: true },
+  jejuri1: { name: "220 kV Jejuri-I SS", lat: 18.279, lon: 74.135, kv: "220", group: "state220" },
+  baramati: { name: "220 kV Baramati SS", lat: 18.1516, lon: 74.5815, kv: "220", group: "state220" },
+  walchandnagar: { name: "220 kV Walchandnagar SS", lat: 18.026889, lon: 74.772115, kv: "220", group: "state220" },
+  supamidc: { name: "220 kV Supa MIDC SS", lat: 18.953299, lon: 74.519556, kv: "220", group: "state220", approx: true },
+  bblr: { name: "400 kV BBLR SS (Babhleshwar, Tal. Rahata)", lat: 19.620275, lon: 74.491388, kv: "400", group: "state220" },
+  jeurkhandke: { name: "220 kV Jeur Khandke SS", lat: 18.72, lon: 75.9, kv: "220", group: "state220", approx: true },
+  sonewadi: { name: "220 kV Sonewadi SS", lat: 19.049833, lon: 74.7005, kv: "220", group: "state220" },
+  // same site as Ahilyanagar
+  patoda: { name: "220 kV Patoda SS", lat: 18.68, lon: 75.83, kv: "220", group: "state220", approx: true },
+  karkambh: { name: "220 kV Karkambh SS", lat: 17.86, lon: 75.15, kv: "220", group: "state220", approx: true },
+  paranda: { name: "220 kV Paranda SS", lat: 18.27, lon: 75.45, kv: "220", group: "state220", approx: true },
+  barshi: { name: "220 kV Barshi SS", lat: 18.250275, lon: 75.701348, kv: "220", group: "state220" },
+  osmanabad: { name: "220 kV Osmanabad (Dharashiv) SS", lat: 18.136697, lon: 76.067609, kv: "220", group: "state220" },
+  solapurs2: { name: "220 kV Solapur S2 (Bale) SS", lat: 17.707137, lon: 75.878999, kv: "220", group: "state220" },
+  lamboti: { name: "400 kV Lamboti SS", lat: 17.777494, lon: 75.735356, kv: "400", group: "state220" },
+  tuljapur: { name: "220 kV Tuljapur SS", lat: 17.953054, lon: 76.026304, kv: "220", group: "state220" },
+  tembhurni: { name: "220 kV Tembhurni SS", lat: 18.01, lon: 75.1, kv: "220", group: "state220", approx: true },
+  malinagar: { name: "220 kV Malinagar SS", lat: 17.96, lon: 75.4, kv: "220", group: "state220", approx: true },
+  bhalwani: { name: "220 kV Bhalwani SS", lat: 17.8, lon: 75.5, kv: "220", group: "state220", approx: true },
+  pandharpur1: { name: "220 kV Pandharpur-I SS", lat: 17.654623, lon: 75.325002, kv: "220", group: "state220" },
+  pandharpur2: { name: "220 kV Pandharpur-II SS", lat: 17.657, lon: 75.327, kv: "220", group: "state220", approx: true }
+};
+const DEFAULT_LINES = [
+  // ---- Core Karjat 400kV ----
+  {
+    key: "karjat_lilo",
+    from: "karjat",
+    to: "lilo",
+    kv: "400",
+    circuits: 4,
+    status: "existing",
+    km: "~5.3 km shared corridor",
+    path: [[18.448778, 74.746306], [18.4708, 74.7395], [18.494797, 74.758146]]
+  },
+  {
+    key: "lilo_lonikand2",
+    from: "lilo",
+    to: "lonikand2",
+    kv: "400",
+    circuits: 2,
+    status: "existing",
+    km: "77.4 km",
+    path: [[18.494797, 74.758146], [18.4996, 74.42], [18.562, 74.19], [18.639778, 74.040083]]
+  },
+  {
+    key: "lilo_girawali",
+    from: "lilo",
+    to: "girawali",
+    kv: "400",
+    circuits: 2,
+    status: "existing",
+    km: "206.6 km",
+    path: [[18.494797, 74.758146], [18.46, 75.12], [18.57, 75.65], [18.66, 76.12], [18.747447, 76.457604]]
+  },
+  {
+    key: "karjat_puneeast",
+    from: "karjat",
+    to: "puneeast",
+    kv: "400",
+    circuits: 2,
+    status: "planned",
+    km: "~50 km D/C",
+    path: [[18.448778, 74.746306], [18.56, 74.83], [18.65, 74.95], [18.729387, 75.020199]]
+  },
+  // ---- Core Karjat 220kV ----
+  // Ahilyanagar + Belwandi share a double-circuit corridor up to the historic cut point, then split
+  {
+    key: "karjat_cutab",
+    from: "karjat",
+    to: "cut_ab",
+    kv: "220",
+    circuits: 2,
+    status: "existing",
+    km: "shared corridor",
+    path: [[18.448778, 74.746306], [18.56, 74.71], [18.72, 74.685], [18.859, 74.66]]
+  },
+  {
+    key: "cutab_belwandi",
+    from: "cut_ab",
+    to: "belwandi",
+    kv: "220",
+    circuits: 1,
+    status: "existing",
+    km: "40.7 km (total from Karjat)",
+    path: [[18.859, 74.66], [18.685139, 74.62575]]
+  },
+  {
+    key: "cutab_ahilyanagar",
+    from: "cut_ab",
+    to: "ahilyanagar",
+    kv: "220",
+    circuits: 1,
+    status: "existing",
+    km: "79.6 km (total from Karjat)",
+    path: [[18.859, 74.66], [18.96, 74.68], [19.049833, 74.7005]]
+  },
+  {
+    key: "karjat_bhigwan",
+    from: "karjat",
+    to: "bhigwan",
+    kv: "220",
+    circuits: 1,
+    status: "existing",
+    km: "19.84 km",
+    path: [[18.448778, 74.746306], [18.375, 74.755], [18.304861, 74.758389]]
+  },
+  {
+    key: "karjat_shirsuphal",
+    from: "karjat",
+    to: "shirsuphal",
+    kv: "220",
+    circuits: 1,
+    status: "existing",
+    km: "19.84 km",
+    path: [[18.448778, 74.746306], [18.38, 74.65], [18.320306, 74.56975]]
+  },
+  {
+    key: "karjat_jeur",
+    from: "karjat",
+    to: "jeur",
+    kv: "220",
+    circuits: 2,
+    status: "existing",
+    km: "50.69 km (Ckt I & II)",
+    path: [[18.448778, 74.746306], [18.39, 74.92], [18.32, 75.05], [18.262806, 75.151167]]
+  },
+  // ---- Statewide 400kV backbone (illustrative direct alignments) ----
+  { key: "kharghar_kalwa", from: "kharghar", to: "kalwa", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "kharghar_chakan", from: "kharghar", to: "chakan", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "chakan_punepg", from: "chakan", to: "punepg", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "chakan_lonikand1", from: "chakan", to: "lonikand1", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "shikrapur_lonikand1", from: "shikrapur", to: "lonikand1", kv: "765", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "lonikand1_lonikand2", from: "lonikand1", to: "lonikand2", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "punepg_kiv", from: "punepg", to: "kiv", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "kiv_karad", from: "kiv", to: "karad", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "punepg_jejuri", from: "punepg", to: "jejuri", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "lonikand2_kalamb", from: "lonikand2", to: "kalamb", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "kalamb_chandrapur1", from: "kalamb", to: "chandrapur1", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "chandrapur1_chandrapur2", from: "chandrapur1", to: "chandrapur2", kv: "400", circuits: 2, status: "existing", km: "", path: [] },
+  { key: "chandrapur1_kumbhargaon", from: "chandrapur1", to: "kumbhargaon", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "lonikand2_puneeast_state", from: "lonikand2", to: "puneeast", kv: "765", circuits: 1, status: "planned", km: "", path: [] },
+  // ---- Statewide 220kV (Karjat-bus wider network diagram) ----
+  { key: "phaltan_lonand", from: "phaltan", to: "lonand", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "phaltan_bothe", from: "phaltan", to: "bothe", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "phaltan_jejuri1", from: "phaltan", to: "jejuri1", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "lonand_baramati", from: "lonand", to: "baramati", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "jejuri1_walchandnagar", from: "jejuri1", to: "walchandnagar", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "baramati_walchandnagar", from: "baramati", to: "walchandnagar", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "baramati_shirsuphal", from: "baramati", to: "shirsuphal", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "walchandnagar_bhigwan", from: "walchandnagar", to: "bhigwan", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "bhigwan_belwandi", from: "bhigwan", to: "belwandi", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "supamidc_karjat", from: "supamidc", to: "karjat", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "bblr_jeurkhandke", from: "bblr", to: "jeurkhandke", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "karjat_jeurkhandke", from: "karjat", to: "jeurkhandke", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "jeurkhandke_patoda", from: "jeurkhandke", to: "patoda", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "jeur_karkambh", from: "jeur", to: "karkambh", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "karkambh_paranda", from: "karkambh", to: "paranda", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "paranda_barshi", from: "paranda", to: "barshi", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "paranda_osmanabad", from: "paranda", to: "osmanabad", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "osmanabad_solapurs2", from: "osmanabad", to: "solapurs2", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "osmanabad_tuljapur", from: "osmanabad", to: "tuljapur", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "lamboti_tuljapur", from: "lamboti", to: "tuljapur", kv: "220", circuits: 1, status: "planned", km: "feed", path: [] },
+  { key: "lamboti_karkambh", from: "lamboti", to: "karkambh", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "karkambh_tembhurni", from: "karkambh", to: "tembhurni", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "tembhurni_malinagar", from: "tembhurni", to: "malinagar", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "malinagar_bhalwani", from: "malinagar", to: "bhalwani", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "bhalwani_pandharpur1", from: "bhalwani", to: "pandharpur1", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
+  { key: "pandharpur1_pandharpur2", from: "pandharpur1", to: "pandharpur2", kv: "220", circuits: 2, status: "existing", km: "", path: [] }
+];
+const JURISDICTION_SEED = [
   {
     line: "400 kV Karjat - Girawali Ckt I & II",
     length: "214.6 km",
     segments: [
       { chainage: "0-37 km", division: "LMSD Lonikand" },
       { chainage: "37-87 km", division: "400 kV LMSD Lamboti" },
-      { chainage: "87-214.6 km", division: "LMSD Girwali" },
+      { chainage: "87-214.6 km", division: "LMSD Girwali" }
     ],
     teams: [
       { teamName: "Team 1", members: [{ name: "Aishwarya Kirtane", post: "AEE", mobile: "9922364856" }] },
       { teamName: "Team 2", members: [{ name: "Shri Nadgire", post: "DyCT", mobile: "9850704944" }] },
-      { teamName: "Team 3", members: [{ name: "Nagesh Saray", post: "AE", mobile: "8554994942" }] },
-    ],
+      { teamName: "Team 3", members: [{ name: "Nagesh Saray", post: "AE", mobile: "8554994942" }] }
+    ]
   },
   {
     line: "400 kV Karjat - Lonikand I & II",
     length: "85.4 km",
     segments: [{ chainage: "0-85.4 km", division: "LMSD Lonikand" }],
-    teams: [
-      { teamName: "Team 1", members: [{ name: "Aishwarya Kirtane", post: "AEE", mobile: "9922364856" }] },
-    ],
+    teams: [{ teamName: "Team 1", members: [{ name: "Aishwarya Kirtane", post: "AEE", mobile: "9922364856" }] }]
   },
   {
     line: "400/765 kV Karjat - Pune East (planned)",
     length: "~50 km D/C",
     segments: [{ chainage: "0-50 km", division: "POWERGRID (to be assigned)" }],
-    teams: [],
+    teams: []
   },
   {
     line: "220 kV Ahilyanagar",
     length: "79.6 km",
     segments: [{ chainage: "0-79.6 km", division: "LMSD Kedgaon" }],
-    teams: [
-      {
-        teamName: "Team 1",
-        members: [
-          { name: "Kishor Katore", post: "AEE", mobile: "9762430884" },
-          { name: "Kailash Patil", post: "DyEE", mobile: "7030831440" },
-        ],
-      },
-    ],
+    teams: [{ teamName: "Team 1", members: [
+      { name: "Kishor Katore", post: "AEE", mobile: "9762430884" },
+      { name: "Kailash Patil", post: "DyEE", mobile: "7030831440" }
+    ] }]
   },
   {
     line: "220 kV Bhose / Belwandi",
     length: "40.7 km",
     segments: [{ chainage: "0-40.7 km", division: "LMSD Kedgaon" }],
-    teams: [
-      {
-        teamName: "Team 1",
-        members: [
-          { name: "Kishor Katore", post: "AEE", mobile: "9762430884" },
-          { name: "Kailash Patil", post: "DyEE", mobile: "7030831440" },
-        ],
-      },
-    ],
+    teams: [{ teamName: "Team 1", members: [
+      { name: "Kishor Katore", post: "AEE", mobile: "9762430884" },
+      { name: "Kailash Patil", post: "DyEE", mobile: "7030831440" }
+    ] }]
   },
   {
     line: "220 kV Bhigwan",
     length: "19.84 km",
     segments: [{ chainage: "0-19.84 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
+    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
   },
   {
     line: "220 kV Shirsuphal",
     length: "19.84 km",
     segments: [{ chainage: "0-19.84 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
+    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
   },
   {
     line: "220 kV Jeur-I",
     length: "50.69 km",
     segments: [{ chainage: "0-50.69 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
+    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
   },
   {
     line: "220 kV Jeur-II",
     length: "50.69 km",
     segments: [{ chainage: "0-50.69 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
-  },
+    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
+  }
 ];
+// ---- Live/editable copies. Editor page mutates these in place so every page
+//      (which reads SUBSTATIONS/LINES fresh on each mount) reflects the edits. ----
+const SUBSTATIONS = {};
+Object.entries(DEFAULT_SUBSTATIONS).forEach(([k, v]) => { SUBSTATIONS[k] = { ...v }; });
+const LINES = DEFAULT_LINES.map((l) => ({ ...l, path: l.path.map((p) => [p[0], p[1]]) }));
 
-const MAX_TEAMS_PER_LINE = 5;
-const MAX_MEMBERS_PER_TEAM = 5;
-const MIN_MEMBERS_PER_TEAM = 1;
-
-function getOrCreateFolder_() {
-  const it = DriveApp.getFoldersByName(FOLDER_NAME);
-  return it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER_NAME);
+const GEO_STORAGE_KEY = "karjatGeoOverrides_v1";
+function loadGeoLocal() {
+  try {
+    const raw = localStorage.getItem(GEO_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
 }
+function saveGeoLocal(geo) {
+  try { localStorage.setItem(GEO_STORAGE_KEY, JSON.stringify(geo)); } catch (e) {}
+}
+// Merges an edited {subs, lines} object into the shared SUBSTATIONS/LINES so
+// every already-defined page picks it up next time it renders/mounts.
+function applyGeoOverrides(geo) {
+  if (!geo || !geo.subs || !geo.lines) return;
+  Object.keys(SUBSTATIONS).forEach((k) => { if (!geo.subs[k]) delete SUBSTATIONS[k]; });
+  Object.entries(geo.subs).forEach(([k, v]) => { SUBSTATIONS[k] = { ...v }; });
+  LINES.length = 0;
+  geo.lines.forEach((l) => LINES.push({ ...l, path: l.path.map((p) => [p[0], p[1]]) }));
+}
+(function hydrateGeoOnBoot() {
+  const stored = loadGeoLocal();
+  if (stored) applyGeoOverrides(stored);
+})();
 
-function getOrCreateSpreadsheet_() {
-  const folder = getOrCreateFolder_();
-  const files = folder.getFilesByName(SHEET_NAME);
-  if (files.hasNext()) {
-    return SpreadsheetApp.open(files.next());
+const LMSD_ZONES = [
+  {
+    name: "LMSD Lonikand",
+    color: "#42d6c8",
+    poly: [[18.4, 74.55], [18.63, 74.55], [18.7, 74.05], [18.4, 74]]
+  },
+  {
+    name: "400 kV LMSD Lamboti",
+    color: "#f2a53c",
+    poly: [[18.3, 74.9], [18.7, 74.9], [18.7, 75.75], [18.3, 75.75]]
+  },
+  {
+    name: "LMSD Girwali",
+    color: "#ef4d8f",
+    poly: [[18.35, 75.75], [18.95, 75.75], [18.95, 76.55], [18.35, 76.55]]
+  },
+  {
+    name: "LMSD Kedgaon",
+    color: "#a78bfa",
+    poly: [[18.6, 74.5], [19.15, 74.5], [19.15, 74.9], [18.6, 74.9]]
+  },
+  {
+    name: "LMSD Baramati",
+    color: "#4ade80",
+    poly: [[18.1, 74.45], [18.45, 74.45], [18.45, 75.25], [18.1, 75.25]]
   }
-  const ss = SpreadsheetApp.create(SHEET_NAME);
-  const file = DriveApp.getFileById(ss.getId());
-  folder.addFile(file);
-  DriveApp.getRootFolder().removeFile(file); // keep it only inside our folder
-  return ss;
+];
+const WMO = {
+  0: { label: "Clear sky", mood: "sunny", icon: "sun" },
+  1: { label: "Mainly clear", mood: "sunny", icon: "sun" },
+  2: { label: "Partly cloudy", mood: "cloudy", icon: "cloud-sun" },
+  3: { label: "Overcast", mood: "cloudy", icon: "cloud" },
+  45: { label: "Fog", mood: "fog", icon: "cloud-fog" },
+  48: { label: "Depositing rime fog", mood: "fog", icon: "cloud-fog" },
+  51: { label: "Light drizzle", mood: "rain", icon: "cloud-drizzle" },
+  53: { label: "Moderate drizzle", mood: "rain", icon: "cloud-drizzle" },
+  55: { label: "Dense drizzle", mood: "rain", icon: "cloud-drizzle" },
+  56: { label: "Light freezing drizzle", mood: "rain", icon: "cloud-drizzle" },
+  57: { label: "Dense freezing drizzle", mood: "rain", icon: "cloud-drizzle" },
+  61: { label: "Slight rain", mood: "rain", icon: "cloud-rain" },
+  63: { label: "Moderate rain", mood: "rain", icon: "cloud-rain" },
+  65: { label: "Heavy rain", mood: "storm", icon: "cloud-rain-wind" },
+  66: { label: "Light freezing rain", mood: "rain", icon: "cloud-rain" },
+  67: { label: "Heavy freezing rain", mood: "storm", icon: "cloud-rain-wind" },
+  71: { label: "Slight snow", mood: "snow", icon: "cloud-snow" },
+  73: { label: "Moderate snow", mood: "snow", icon: "cloud-snow" },
+  75: { label: "Heavy snow", mood: "snow", icon: "cloud-snow" },
+  77: { label: "Snow grains", mood: "snow", icon: "cloud-snow" },
+  80: { label: "Slight rain showers", mood: "rain", icon: "cloud-rain" },
+  81: { label: "Moderate rain showers", mood: "rain", icon: "cloud-rain" },
+  82: { label: "Violent rain showers", mood: "storm", icon: "cloud-rain-wind" },
+  85: { label: "Slight snow showers", mood: "snow", icon: "cloud-snow" },
+  86: { label: "Heavy snow showers", mood: "snow", icon: "cloud-snow" },
+  95: { label: "Thunderstorm", mood: "storm", icon: "cloud-lightning" },
+  96: { label: "Thunderstorm, slight hail", mood: "storm", icon: "cloud-lightning" },
+  99: { label: "Thunderstorm, heavy hail", mood: "storm", icon: "cloud-lightning" }
+};
+function wmoInfo(code) {
+  return WMO[code] || { label: "Unknown", mood: "cloudy", icon: "cloud" };
 }
-
-function sheetNameForLine_(lineName) {
-  // Sheet tab names max 100 chars & can't contain []*?/\:
-  return lineName.replace(/[\[\]\*\?\/\\:]/g, "").substring(0, 90);
+async function fetchWeatherBatch(points) {
+  const lats = points.map((p) => p.lat).join(",");
+  const lons = points.map((p) => p.lon).join(",");
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current_weather=true&hourly=temperature_2m,weathercode,precipitation_probability&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=16&timezone=auto`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Weather fetch failed: " + res.status);
+  const json = await res.json();
+  const arr = Array.isArray(json) ? json : [json];
+  const out = {};
+  points.forEach((p, i) => {
+    out[p.key] = arr[i];
+  });
+  return out;
 }
-
-function INIT_() {
-  const ss = getOrCreateSpreadsheet_();
-
-  // Remove default blank sheet if present and unused
-  const defaultSheet = ss.getSheetByName("Sheet1");
-
-  SEED_LINES.forEach((lineObj) => {
-    const tabName = sheetNameForLine_(lineObj.line);
-    let sheet = ss.getSheetByName(tabName);
-    if (!sheet) sheet = ss.insertSheet(tabName);
-    sheet.clear();
-
-    sheet.getRange(1, 1, 1, 2).setValues([["Line", lineObj.line]]).setFontWeight("bold");
-    sheet.getRange(2, 1, 1, 2).setValues([["Length", lineObj.length]]);
-
-    let row = 4;
-    sheet.getRange(row, 1, 1, 2).setValues([["Chainage", "Division"]]).setFontWeight("bold");
-    row++;
-    lineObj.segments.forEach((seg) => {
-      sheet.getRange(row, 1, 1, 2).setValues([[seg.chainage, seg.division]]);
-      row++;
-    });
-
-    row += 1;
-    const headerRow = row;
-    sheet.getRange(row, 1, 1, 5).setValues([["Team", "Member #", "Name", "Post", "Mobile"]]).setFontWeight("bold");
-    row++;
-    lineObj.teams.forEach((team) => {
-      team.members.forEach((m, i) => {
-        sheet.getRange(row, 1, 1, 5).setValues([[team.teamName, i + 1, m.name, m.post, m.mobile]]);
-        row++;
+const KV_COLOR = { "400": "#ef4d8f", "765": "#ef4d8f", "220": "#42d6c8", tee: "#93a2b3", planned: "#ef4d8f" };
+function offsetPath(path, meters) {
+  const out = [];
+  for (let i = 0; i < path.length; i++) {
+    const [lat, lon] = path[i];
+    const prev = path[Math.max(0, i - 1)];
+    const next = path[Math.min(path.length - 1, i + 1)];
+    const dLat = next[0] - prev[0];
+    const dLon = next[1] - prev[1];
+    const len = Math.hypot(dLat, dLon) || 1;
+    const perpLat = -dLon / len;
+    const perpLon = dLat / len;
+    const degPerMeter = meters / 111320;
+    out.push([lat + perpLat * degPerMeter, lon + perpLon * degPerMeter]);
+  }
+  return out;
+}
+function interpolateAlong(path, frac) {
+  const segLens = [];
+  let total = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    const d = Math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1]);
+    segLens.push(d);
+    total += d;
+  }
+  let target = total * frac;
+  for (let i = 0; i < segLens.length; i++) {
+    if (target <= segLens[i] || i === segLens.length - 1) {
+      const t = segLens[i] ? target / segLens[i] : 0;
+      const [lat1, lon1] = path[i];
+      const [lat2, lon2] = path[i + 1];
+      return [lat1 + (lat2 - lat1) * t, lon1 + (lon2 - lon1) * t];
+    }
+    target -= segLens[i];
+  }
+  return path[path.length - 1];
+}
+// Tower numbering: index 0 and the last index of a line's path are the
+// substation ends, not towers. Interior points are numbered sequentially
+// from whichever end `numberFrom` points to ("from" = start of path, i.e.
+// the line's `from` substation; "to" = the other end). Any index present in
+// `towerLabels` (keyed by path-index string) overrides the sequential
+// default, so a line can carry custom labels like 12, 12A, 12B, 12C, 13.
+function computeTowerLabel(line, idx) {
+  const n = line.path.length;
+  if (idx <= 0 || idx >= n - 1) return null;
+  const overrides = line.towerLabels || {};
+  const custom = overrides[String(idx)];
+  if (custom != null && custom !== "") return custom;
+  const interior = [];
+  for (let i = 1; i <= n - 2; i++) interior.push(i);
+  if (line.numberFrom === "to") interior.reverse();
+  const pos = interior.indexOf(idx);
+  return String(pos + 1);
+}
+function towerNumIcon(label, zoomLevel) {
+  const z = zoomLevel || 13;
+  const fontSize = Math.max(12, Math.min(22, 12 + (z - 13) * 2.2));
+  const pad = Math.max(2, Math.round(fontSize * 0.28));
+  return L.divIcon({
+    className: "tower-num-icon",
+    html: `<div class="tower-num" style="font-size:${fontSize}px;padding:${pad}px ${pad + 2}px;">${label}</div>`,
+    iconSize: [1, 1],
+    iconAnchor: [0, 0]
+  });
+}
+function GridMap({
+  substationKeys = null,
+  lineKeys = null,
+  showZones = false,
+  showKm = false,
+  weatherEnabled = false,
+  onSelect = () => {
+  },
+  height = "70vh",
+  downloadName = "karjat-grid-map",
+  center = [18.55, 74.9],
+  zoom = 9
+}) {
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const normalLayerRef = useRef(null);
+  const satLayerRef = useRef(null);
+  const overlayGroupRef = useRef(null);
+  const [mode, setMode] = useState("normal");
+  const [hybridOpacity, setHybridOpacity] = useState(55);
+  const [mapZoom, setMapZoom] = useState(zoom);
+  const [showTowerNumbers, setShowTowerNumbers] = useState(true);
+  const [weatherData, setWeatherData] = useState({});
+  const [downloading, setDownloading] = useState(false);
+  useEffect(() => {
+    const map = L.map(containerRef.current, { zoomControl: true }).setView(center, zoom);
+    mapRef.current = map;
+    map.on("zoomend", () => setMapZoom(map.getZoom()));
+    normalLayerRef.current = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      crossOrigin: true,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+    satLayerRef.current = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom: 19, crossOrigin: true, opacity: 0, attribution: "Tiles &copy; Esri" }
+    ).addTo(map);
+    overlayGroupRef.current = L.layerGroup().addTo(map);
+    return () => map.remove();
+  }, []);
+  useEffect(() => {
+    if (!satLayerRef.current) return;
+    if (mode === "normal") satLayerRef.current.setOpacity(0);
+    else if (mode === "satellite") satLayerRef.current.setOpacity(1);
+    else satLayerRef.current.setOpacity(hybridOpacity / 100);
+  }, [mode, hybridOpacity]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const group = overlayGroupRef.current;
+    group.clearLayers();
+    if (showZones) {
+      LMSD_ZONES.forEach((zone) => {
+        const poly = L.polygon(zone.poly, {
+          color: zone.color,
+          weight: 1.5,
+          fillColor: zone.color,
+          fillOpacity: 0.08,
+          dashArray: "4 5"
+        }).addTo(group);
+        const matching = JURISDICTION_SEED.filter(
+          (j) => j.segments.some((s) => s.division === zone.name)
+        );
+        const officerLines = matching.flatMap((j) => j.teams.flatMap((t) => t.members.map((m) => `${m.name} (${m.post}) \xB7 ${m.mobile}`))).filter((v, i, a) => a.indexOf(v) === i);
+        const html = `<div class="popup-card">
+            <div class="popup-title">${zone.name}</div>
+            <div class="popup-sub">${matching.map((m) => m.line).join("<br/>")}</div>
+            <hr/>
+            ${officerLines.map((o) => `<div class="popup-officer">${o}</div>`).join("")}
+          </div>`;
+        poly.bindTooltip(zone.name, { sticky: true });
+        poly.bindPopup(html);
+        poly.on("click", () => onSelect(zone.name, "zone"));
       });
-    });
-
-    sheet.autoResizeColumns(1, 5);
-    sheet.setFrozenRows(headerRow);
-  });
-
-  if (defaultSheet && ss.getSheets().length > 1) {
-    ss.deleteSheet(defaultSheet);
-  }
-
-  return ss.getUrl();
-}
-
-function readLineFromSheet_(sheet) {
-  const data = sheet.getDataRange().getValues();
-  const lineName = data[0][1];
-  const length = data[1][1];
-
-  const segments = [];
-  let r = 4; // 0-indexed row 4 = "Chainage/Division" header
-  r++; // move past header
-  while (r < data.length && data[r][0] && data[r][0] !== "Team") {
-    segments.push({ chainage: data[r][0], division: data[r][1] });
-    r++;
-  }
-
-  // find the "Team" header row
-  while (r < data.length && data[r][0] !== "Team") r++;
-  r++; // past header
-
-  const teamsMap = {};
-  const teamOrder = [];
-  for (; r < data.length; r++) {
-    const row = data[r];
-    if (!row[0]) continue;
-    const teamName = String(row[0]);
-    if (!teamsMap[teamName]) {
-      teamsMap[teamName] = [];
-      teamOrder.push(teamName);
     }
-    teamsMap[teamName].push({ name: row[2], post: row[3], mobile: String(row[4]) });
-  }
-  const teams = teamOrder.map((t) => ({ teamName: t, members: teamsMap[t] }));
-
-  return { line: lineName, length: length, segments: segments, teams: teams };
-}
-
-function getAllData_() {
-  const ss = getOrCreateSpreadsheet_();
-  const sheets = ss.getSheets();
-  if (sheets.length === 0 || (sheets.length === 1 && sheets[0].getName() === "Sheet1")) {
-    INIT_();
-  }
-  const fresh = getOrCreateSpreadsheet_();
-  return fresh
-    .getSheets()
-    .filter((s) => s.getLastRow() > 0)
-    .map(readLineFromSheet_);
-}
-
-function saveTeamsForLine_(lineName, teams) {
-  if (!Array.isArray(teams) || teams.length > MAX_TEAMS_PER_LINE) {
-    throw new Error("A line can have at most " + MAX_TEAMS_PER_LINE + " teams.");
-  }
-  teams.forEach((t) => {
-    if (!t.members || t.members.length < MIN_MEMBERS_PER_TEAM || t.members.length > MAX_MEMBERS_PER_TEAM) {
-      throw new Error(
-        "Each team needs between " + MIN_MEMBERS_PER_TEAM + " and " + MAX_MEMBERS_PER_TEAM + " members."
+    const linesToShow = LINES.filter((l) => !lineKeys || lineKeys.includes(l.key)).filter(
+      (l) => l.path && l.path.length > 1
+    );
+    linesToShow.forEach((line) => {
+      const color = line.color || KV_COLOR[line.kv] || "#999";
+      const dash = line.status === "planned" ? "6 8" : null;
+      const paths = line.circuits >= 2 ? [offsetPath(line.path, 90), offsetPath(line.path, -90)] : [line.path];
+      paths.forEach((p) => {
+        L.polyline(p, {
+          color,
+          weight: line.kv === "220" ? 3 : 3.6,
+          opacity: 0.92,
+          dashArray: dash,
+          lineCap: "round"
+        }).addTo(group).bindTooltip(`${line.from} \u2192 ${line.to} (${line.km || ""})`, { sticky: true });
+      });
+      if (showTowerNumbers && mapZoom >= 13 && line.path.length > 2) {
+        line.path.forEach((pt, idx) => {
+          const label = computeTowerLabel(line, idx);
+          if (!label) return;
+          L.marker(pt, { icon: towerNumIcon(label, mapZoom), interactive: false }).addTo(group);
+        });
+      }
+      if (showKm && line.path.length > 1) {
+        [0.25, 0.5, 0.75].forEach((frac) => {
+          const pt = interpolateAlong(line.path, frac);
+          L.circleMarker(pt, { radius: 3, color: "#0c1117", weight: 1, fillColor: "#fff", fillOpacity: 1 }).addTo(group).bindTooltip(line.km || "", { permanent: false });
+        });
+      }
+    });
+    const subsToShow = Object.entries(SUBSTATIONS).filter(
+      ([key, s]) => !s.hidden && (!substationKeys || substationKeys.includes(key))
+    );
+    subsToShow.forEach(([key, s]) => {
+      const color = KV_COLOR[s.kv] || "#ccc";
+      const marker = L.circleMarker([s.lat, s.lon], {
+        radius: key === "karjat" ? 9 : 6,
+        color,
+        weight: s.kv === "planned" ? 2.4 : 1.4,
+        fillColor: s.kv === "planned" ? "transparent" : color,
+        fillOpacity: s.kv === "planned" ? 0 : 0.9
+      }).addTo(group);
+      const w = weatherData[key];
+      const wInfo = w ? wmoInfo(w.current_weather.weathercode) : null;
+      const html = `<div class="popup-card">
+          <div class="popup-title">${s.name}${s.approx ? ' <span class="tag-approx">approx.</span>' : ""}</div>
+          <div class="popup-sub">${s.lat.toFixed(4)}, ${s.lon.toFixed(4)} &middot; ${s.kv === "planned" ? "Planned" : s.kv + " kV"}</div>
+          ${w ? `<div class="popup-weather">${wInfo.label}, ${Math.round(w.current_weather.temperature)}&deg;C</div>` : ""}
+        </div>`;
+      marker.bindPopup(html);
+      marker.on("click", () => onSelect(key, "substation"));
+      if (weatherEnabled && w) {
+        const icon = L.divIcon({
+          className: "weather-badge",
+          html: `<div class="wbadge wbadge-${wInfo.mood}">${Math.round(w.current_weather.temperature)}&deg;</div>`,
+          iconSize: [34, 20],
+          iconAnchor: [17, 30]
+        });
+        L.marker([s.lat, s.lon], { icon }).addTo(group);
+      }
+    });
+  }, [substationKeys, lineKeys, showZones, showKm, weatherEnabled, weatherData, onSelect, mapZoom, showTowerNumbers]);
+  useEffect(() => {
+    if (!weatherEnabled) return;
+    const keys = Object.entries(SUBSTATIONS).filter(([k, s]) => !s.hidden && (!substationKeys || substationKeys.includes(k))).map(([k, s]) => ({ key: k, lat: s.lat, lon: s.lon }));
+    if (keys.length === 0) return;
+    fetchWeatherBatch(keys).then(setWeatherData).catch((e) => console.error("weather fetch error", e));
+  }, [weatherEnabled]);
+  const handleDownload = useCallback(async () => {
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(containerRef.current, { useCORS: true, allowTaint: true });
+      const imgData = canvas.toDataURL("image/png");
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [canvas.width, canvas.height] });
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+      pdf.save(`${downloadName}.pdf`);
+    } catch (e) {
+      alert(
+        "Could not export this view (some map tile providers block canvas export via CORS). As a fallback, use your browser's Print \u2192 Save as PDF on this page."
       );
+      console.error(e);
+    } finally {
+      setDownloading(false);
     }
-  });
-
-  const ss = getOrCreateSpreadsheet_();
-  const tabName = sheetNameForLine_(lineName);
-  const sheet = ss.getSheetByName(tabName);
-  if (!sheet) throw new Error("Line not found: " + lineName);
-
-  const existing = readLineFromSheet_(sheet);
-
-  sheet.clear();
-  sheet.getRange(1, 1, 1, 2).setValues([["Line", existing.line]]).setFontWeight("bold");
-  sheet.getRange(2, 1, 1, 2).setValues([["Length", existing.length]]);
-
-  let row = 4;
-  sheet.getRange(row, 1, 1, 2).setValues([["Chainage", "Division"]]).setFontWeight("bold");
-  row++;
-  existing.segments.forEach((seg) => {
-    sheet.getRange(row, 1, 1, 2).setValues([[seg.chainage, seg.division]]);
-    row++;
-  });
-
-  row += 1;
-  const headerRow = row;
-  sheet.getRange(row, 1, 1, 5).setValues([["Team", "Member #", "Name", "Post", "Mobile"]]).setFontWeight("bold");
-  row++;
-  teams.forEach((team) => {
-    team.members.forEach((m, i) => {
-      sheet.getRange(row, 1, 1, 5).setValues([[team.teamName, i + 1, m.name, m.post, m.mobile]]);
-      row++;
+  }, [downloadName]);
+  return /* @__PURE__ */ React.createElement("div", { className: "gridmap-wrap", style: { height } }, /* @__PURE__ */ React.createElement("div", { ref: containerRef, className: "gridmap-canvas" }), /* @__PURE__ */ React.createElement("div", { className: "map-controls" }, /* @__PURE__ */ React.createElement("div", { className: "layer-switch" }, ["normal", "hybrid", "satellite"].map((m) => /* @__PURE__ */ React.createElement("button", { key: m, className: mode === m ? "active" : "", onClick: () => setMode(m) }, m === "normal" ? "Map" : m === "hybrid" ? "Hybrid" : "Satellite"))), /* @__PURE__ */ React.createElement("button", { className: "layer-switch-single" + (showTowerNumbers ? " active" : ""), onClick: () => setShowTowerNumbers(!showTowerNumbers), title: "Tower numbers show once you zoom in close" }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"), mode === "hybrid" && /* @__PURE__ */ React.createElement("div", { className: "opacity-slider" }, /* @__PURE__ */ React.createElement("span", null, "Satellite opacity"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "range",
+      min: "0",
+      max: "100",
+      value: hybridOpacity,
+      onChange: (e) => setHybridOpacity(Number(e.target.value))
+    }
+  ), /* @__PURE__ */ React.createElement("span", null, hybridOpacity, "%"))), /* @__PURE__ */ React.createElement("button", { className: "download-btn", onClick: handleDownload, disabled: downloading }, downloading ? "Preparing\u2026" : "\u2B07 Download view (PDF)"));
+}
+function User({ size = 14 }) {
+  return /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", style: { display: "inline", verticalAlign: "-2px" } }, /* @__PURE__ */ React.createElement("path", { d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" }), /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "7", r: "4" }));
+}
+function Phone({ size = 14 }) {
+  return /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", style: { display: "inline", verticalAlign: "-2px" } }, /* @__PURE__ */ React.createElement("path", { d: "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" }));
+}
+const KARJAT_SUBSTATION_KEYS = [
+  "karjat",
+  "lilo",
+  "girawali",
+  "lonikand2",
+  "puneeast",
+  "ahilyanagar",
+  "belwandi",
+  "bhigwan",
+  "shirsuphal",
+  "jeur"
+];
+const KARJAT_LINE_KEYS = [
+  "karjat_lilo",
+  "lilo_lonikand2",
+  "lilo_girawali",
+  "karjat_puneeast",
+  "karjat_cutab",
+  "cutab_belwandi",
+  "cutab_ahilyanagar",
+  "karjat_bhigwan",
+  "karjat_shirsuphal",
+  "karjat_jeur"
+];
+function Disclaimer() {
+  return /* @__PURE__ */ React.createElement("div", { className: "disclaimer" }, "Route paths are illustrative estimated alignments built from known line lengths and LILO points \u2014 ", /* @__PURE__ */ React.createElement("strong", null, "not surveyed tower/GPS data."), " Points marked ", /* @__PURE__ */ React.createElement("span", { className: "tag-approx" }, "approx."), " use a nearby town/taluka as a stand-in.");
+}
+function HomePage() {
+  const [selected, setSelected] = useState(null);
+  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement(
+    PageHeader,
+    {
+      eyebrow: "MSETCL \xB7 Ahmednagar District",
+      title: "400 kV Karjat \u2014 Full Network Map",
+      subtitle: "Satellite / hybrid / map layers \xB7 live weather \xB7 zoomable \xB7 downloadable"
+    }
+  ), /* @__PURE__ */ React.createElement(
+    GridMap,
+    {
+      substationKeys: KARJAT_SUBSTATION_KEYS,
+      lineKeys: KARJAT_LINE_KEYS,
+      weatherEnabled: true,
+      onSelect: (k) => setSelected(k),
+      height: "75vh",
+      downloadName: "karjat-full-map"
+    }
+  ), /* @__PURE__ */ React.createElement(Disclaimer, null));
+}
+function LmsdPage() {
+  const [selectedZone, setSelectedZone] = useState(null);
+  const zoneInfo = useMemo(() => {
+    if (!selectedZone) return null;
+    const zone = LMSD_ZONES.find((z) => z.name === selectedZone);
+    const matching = JURISDICTION_SEED.filter((j) => j.segments.some((s) => s.division === selectedZone));
+    return { zone, matching };
+  }, [selectedZone]);
+  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement(
+    PageHeader,
+    {
+      eyebrow: "Page 2",
+      title: "LMSD Jurisdiction Map",
+      subtitle: "Km-wise markers on each line \xB7 click or hover a zone for its responsible office"
+    }
+  ), /* @__PURE__ */ React.createElement("div", { className: "split-layout" }, /* @__PURE__ */ React.createElement(
+    GridMap,
+    {
+      substationKeys: KARJAT_SUBSTATION_KEYS,
+      lineKeys: KARJAT_LINE_KEYS,
+      showZones: true,
+      showKm: true,
+      onSelect: (k, type) => type === "zone" && setSelectedZone(k),
+      height: "70vh",
+      downloadName: "karjat-lmsd-map"
+    }
+  ), /* @__PURE__ */ React.createElement("aside", { className: "side-panel" }, !zoneInfo ? /* @__PURE__ */ React.createElement("div", { className: "empty-hint" }, "Click or hover a shaded LMSD zone on the map to see its responsible office and officers here.") : /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", null, zoneInfo.zone.name), zoneInfo.matching.map((line) => /* @__PURE__ */ React.createElement("div", { key: line.line, className: "jur-card" }, /* @__PURE__ */ React.createElement("div", { className: "jur-line-name" }, line.line), line.teams.flatMap((t) => t.members).map((m, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "jur-officer" }, /* @__PURE__ */ React.createElement(User, { size: 13 }), " ", m.name, " ", /* @__PURE__ */ React.createElement("span", { className: "muted" }, "\xB7 ", m.post), /* @__PURE__ */ React.createElement("div", { className: "jur-mobile" }, /* @__PURE__ */ React.createElement(Phone, { size: 12 }), " ", m.mobile)))))))), /* @__PURE__ */ React.createElement(Disclaimer, null));
+}
+function MaintenancePage() {
+  const [lines, setLines] = useState(JURISDICTION_SEED);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("PASTE_")) return;
+    setLoading(true);
+    fetch(`${APPS_SCRIPT_URL}?action=getData`).then((r) => r.json()).then((d) => d.ok && setLines(d.lines)).catch(() => {
+    }).finally(() => setLoading(false));
+  }, []);
+  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement(PageHeader, { eyebrow: "Page 3", title: "Line Maintenance Directory", subtitle: loading ? "Loading live data\u2026" : "Full contact details by line and division" }), /* @__PURE__ */ React.createElement("div", { className: "table-stack" }, lines.map((line) => /* @__PURE__ */ React.createElement("div", { key: line.line, className: "line-card" }, /* @__PURE__ */ React.createElement("div", { className: "line-card-head" }, /* @__PURE__ */ React.createElement("div", { className: "line-card-title" }, line.line), /* @__PURE__ */ React.createElement("div", { className: "line-card-length" }, line.length)), /* @__PURE__ */ React.createElement("table", { className: "mini-table" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Chainage"), /* @__PURE__ */ React.createElement("th", null, "Division"))), /* @__PURE__ */ React.createElement("tbody", null, line.segments.map((s, i) => /* @__PURE__ */ React.createElement("tr", { key: i }, /* @__PURE__ */ React.createElement("td", null, s.chainage), /* @__PURE__ */ React.createElement("td", null, s.division))))), /* @__PURE__ */ React.createElement("div", { className: "officer-grid" }, line.teams.flatMap((t) => t.members).map((m, i) => /* @__PURE__ */ React.createElement("div", { className: "officer-chip", key: i }, /* @__PURE__ */ React.createElement(User, { size: 14 }), " ", /* @__PURE__ */ React.createElement("span", null, m.name), " ", /* @__PURE__ */ React.createElement("span", { className: "muted" }, m.post), /* @__PURE__ */ React.createElement("a", { href: `tel:${m.mobile}` }, /* @__PURE__ */ React.createElement(Phone, { size: 12 }), " ", m.mobile))), line.teams.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "muted" }, "No officer assigned yet"))))));
+}
+function CoordinatesPage() {
+  const [filter, setFilter] = useState("all");
+  const rows = Object.entries(SUBSTATIONS).filter(([k, s]) => !s.hidden && (filter === "all" || s.group === filter));
+  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement(PageHeader, { eyebrow: "Page 4", title: "Substation Coordinates", subtitle: "All substations referenced across this portal" }), /* @__PURE__ */ React.createElement("div", { className: "chip-row" }, ["all", "karjat", "state400", "state220"].map((f) => /* @__PURE__ */ React.createElement("button", { key: f, className: filter === f ? "chip active" : "chip", onClick: () => setFilter(f) }, f === "all" ? "All" : f === "karjat" ? "Karjat network" : f === "state400" ? "Statewide 400kV" : "Statewide 220kV"))), /* @__PURE__ */ React.createElement("table", { className: "full-table" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Substation"), /* @__PURE__ */ React.createElement("th", null, "Voltage"), /* @__PURE__ */ React.createElement("th", null, "Latitude"), /* @__PURE__ */ React.createElement("th", null, "Longitude"), /* @__PURE__ */ React.createElement("th", null, "Notes"))), /* @__PURE__ */ React.createElement("tbody", null, rows.map(([key, s]) => /* @__PURE__ */ React.createElement("tr", { key }, /* @__PURE__ */ React.createElement("td", null, s.name), /* @__PURE__ */ React.createElement("td", null, s.kv === "planned" ? "Planned" : s.kv === "tee" ? "\u2014" : `${s.kv} kV`), /* @__PURE__ */ React.createElement("td", { className: "mono" }, s.lat.toFixed(6)), /* @__PURE__ */ React.createElement("td", { className: "mono" }, s.lon.toFixed(6)), /* @__PURE__ */ React.createElement("td", null, s.approx ? /* @__PURE__ */ React.createElement("span", { className: "tag-approx" }, "approx.") : ""))))));
+}
+function StatewidePage() {
+  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement(
+    PageHeader,
+    {
+      eyebrow: "Page 5 \xB7 Statewide",
+      title: "All Substations & Line Connections",
+      subtitle: "400 kV and 220 kV network reconstructed from your uploaded connectivity diagrams"
+    }
+  ), /* @__PURE__ */ React.createElement(
+    GridMap,
+    {
+      substationKeys: null,
+      lineKeys: null,
+      weatherEnabled: false,
+      height: "78vh",
+      center: [18.6, 75.4],
+      zoom: 7,
+      downloadName: "statewide-network-map"
+    }
+  ), /* @__PURE__ */ React.createElement(Disclaimer, null));
+}
+const WEATHER_TABS = KARJAT_SUBSTATION_KEYS.filter((k) => SUBSTATIONS[k].kv !== "tee");
+function WeatherPage() {
+  const [active, setActive] = useState("karjat");
+  const [data, setData] = useState({});
+  useEffect(() => {
+    const pts = WEATHER_TABS.map((k) => ({ key: k, lat: SUBSTATIONS[k].lat, lon: SUBSTATIONS[k].lon }));
+    fetchWeatherBatch(pts).then(setData).catch(console.error);
+  }, []);
+  const current = data[active];
+  const mood = current ? wmoInfo(current.current_weather.weathercode).mood : "cloudy";
+  return /* @__PURE__ */ React.createElement("div", { className: `page weather-page mood-${mood}` }, /* @__PURE__ */ React.createElement("div", { className: "weather-bg-layer" }, mood === "rain" || mood === "storm" ? /* @__PURE__ */ React.createElement(RainFX, null) : null, mood === "sunny" ? /* @__PURE__ */ React.createElement(SunFX, null) : null, mood === "cloudy" ? /* @__PURE__ */ React.createElement(CloudFX, null) : null), /* @__PURE__ */ React.createElement("div", { className: "weather-content" }, /* @__PURE__ */ React.createElement(PageHeader, { eyebrow: "Page 6", title: "Weather Across the Grid", subtitle: "Current, hourly and 16-day outlook per substation", light: true }), /* @__PURE__ */ React.createElement("div", { className: "weather-tabs" }, WEATHER_TABS.map((k) => /* @__PURE__ */ React.createElement("button", { key: k, className: active === k ? "wtab active" : "wtab", onClick: () => setActive(k) }, SUBSTATIONS[k].name.replace("400 kV ", "").replace("220 kV ", "").replace(" SS", "")))), !current ? /* @__PURE__ */ React.createElement("div", { className: "empty-hint light" }, "Loading forecast\\u2026") : /* @__PURE__ */ React.createElement(WeatherDetail, { substationKey: active, weather: current }), /* @__PURE__ */ React.createElement("h3", { className: "all-lines-heading" }, "All substations \u2014 live conditions"), /* @__PURE__ */ React.createElement(
+    GridMap,
+    {
+      substationKeys: KARJAT_SUBSTATION_KEYS,
+      lineKeys: KARJAT_LINE_KEYS,
+      weatherEnabled: true,
+      height: "55vh",
+      downloadName: "weather-network-map"
+    }
+  )));
+}
+function WeatherDetail({ substationKey, weather }) {
+  const info = wmoInfo(weather.current_weather.weathercode);
+  const hourly = weather.hourly;
+  const daily = weather.daily;
+  const nowIdx = hourly.time.findIndex((t) => new Date(t) >= /* @__PURE__ */ new Date());
+  const next24 = Array.from({ length: 12 }).map((_, i) => nowIdx + i * 2).filter((i) => i < hourly.time.length);
+  return /* @__PURE__ */ React.createElement("div", { className: "weather-detail" }, /* @__PURE__ */ React.createElement("div", { className: "weather-now" }, /* @__PURE__ */ React.createElement(Icon, { name: info.icon, size: 64 }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "temp-now" }, Math.round(weather.current_weather.temperature), "\xB0C"), /* @__PURE__ */ React.createElement("div", { className: "cond-now" }, info.label), /* @__PURE__ */ React.createElement("div", { className: "loc-now" }, SUBSTATIONS[substationKey].name))), /* @__PURE__ */ React.createElement("div", { className: "hourly-strip" }, next24.map((i) => /* @__PURE__ */ React.createElement("div", { className: "hour-chip", key: i }, /* @__PURE__ */ React.createElement("div", { className: "hour-time" }, new Date(hourly.time[i]).getHours(), ":00"), /* @__PURE__ */ React.createElement(Icon, { name: wmoInfo(hourly.weathercode[i]).icon, size: 20 }), /* @__PURE__ */ React.createElement("div", { className: "hour-temp" }, Math.round(hourly.temperature_2m[i]), "\xB0"), /* @__PURE__ */ React.createElement("div", { className: "hour-pop" }, hourly.precipitation_probability[i], "%")))), /* @__PURE__ */ React.createElement("div", { className: "daily-grid" }, daily.time.map((t, i) => /* @__PURE__ */ React.createElement("div", { className: "day-chip", key: t }, /* @__PURE__ */ React.createElement("div", { className: "day-name" }, i === 0 ? "Today" : new Date(t).toLocaleDateString(void 0, { weekday: "short" })), /* @__PURE__ */ React.createElement(Icon, { name: wmoInfo(daily.weathercode[i]).icon, size: 22 }), /* @__PURE__ */ React.createElement("div", { className: "day-temp" }, Math.round(daily.temperature_2m_max[i]), "\xB0 / ", Math.round(daily.temperature_2m_min[i]), "\xB0"), /* @__PURE__ */ React.createElement("div", { className: "day-pop" }, daily.precipitation_probability_max[i], "%")))));
+}
+function Icon({ name, size }) {
+  const symbol = {
+    sun: "\u2600\uFE0F",
+    "cloud-sun": "\u26C5",
+    cloud: "\u2601\uFE0F",
+    "cloud-fog": "\u{1F32B}\uFE0F",
+    "cloud-drizzle": "\u{1F326}\uFE0F",
+    "cloud-rain": "\u{1F327}\uFE0F",
+    "cloud-rain-wind": "\u{1F328}\uFE0F",
+    "cloud-snow": "\u{1F328}\uFE0F",
+    "cloud-lightning": "\u26C8\uFE0F"
+  }[name] || "\u2601\uFE0F";
+  return /* @__PURE__ */ React.createElement("span", { style: { fontSize: size } }, symbol);
+}
+function RainFX() {
+  const drops = Array.from({ length: 60 });
+  return /* @__PURE__ */ React.createElement("div", { className: "fx-rain" }, drops.map((_, i) => /* @__PURE__ */ React.createElement("span", { key: i, style: { left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s`, animationDuration: `${0.6 + Math.random() * 0.6}s` } })));
+}
+function SunFX() {
+  return /* @__PURE__ */ React.createElement("div", { className: "fx-sun" }, /* @__PURE__ */ React.createElement("div", { className: "sun-glow" }));
+}
+function CloudFX() {
+  return /* @__PURE__ */ React.createElement("div", { className: "fx-cloud" }, /* @__PURE__ */ React.createElement("div", { className: "cloud c1" }), /* @__PURE__ */ React.createElement("div", { className: "cloud c2" }), /* @__PURE__ */ React.createElement("div", { className: "cloud c3" }));
+}
+function TeamsPage() {
+  const [lines, setLines] = useState(JURISDICTION_SEED.map((l) => ({ ...l, teams: l.teams.map((t) => ({ ...t })) })));
+  const [editingLine, setEditingLine] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const liveEnabled = APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("PASTE_");
+  useEffect(() => {
+    if (!liveEnabled) return;
+    fetch(`${APPS_SCRIPT_URL}?action=getData`).then((r) => r.json()).then((d) => d.ok && setLines(d.lines)).catch(() => {
     });
+  }, []);
+  function updateLine(lineName, updater) {
+    setLines((prev) => prev.map((l) => l.line === lineName ? updater(l) : l));
+  }
+  function addTeam(lineName) {
+    updateLine(lineName, (l) => {
+      if (l.teams.length >= 5) return l;
+      return { ...l, teams: [...l.teams, { teamName: `Team ${l.teams.length + 1}`, members: [{ name: "", post: "", mobile: "" }] }] };
+    });
+  }
+  function removeTeam(lineName, idx) {
+    updateLine(lineName, (l) => ({ ...l, teams: l.teams.filter((_, i) => i !== idx) }));
+  }
+  function addMember(lineName, teamIdx) {
+    updateLine(lineName, (l) => ({
+      ...l,
+      teams: l.teams.map((t, i) => i === teamIdx && t.members.length < 5 ? { ...t, members: [...t.members, { name: "", post: "", mobile: "" }] } : t)
+    }));
+  }
+  function removeMember(lineName, teamIdx, mIdx) {
+    updateLine(lineName, (l) => ({
+      ...l,
+      teams: l.teams.map((t, i) => i === teamIdx ? { ...t, members: t.members.filter((_, j) => j !== mIdx) } : t)
+    }));
+  }
+  function updateMember(lineName, teamIdx, mIdx, field, value) {
+    updateLine(lineName, (l) => ({
+      ...l,
+      teams: l.teams.map(
+        (t, i) => i === teamIdx ? { ...t, members: t.members.map((m, j) => j === mIdx ? { ...m, [field]: value } : m) } : t
+      )
+    }));
+  }
+  async function save(line) {
+    if (!liveEnabled) {
+      alert("This is running in preview mode (no Apps Script URL configured in data.js), so changes stay local to your browser only.");
+      setEditingLine(null);
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "saveTeams", line: line.line, teams: line.teams })
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error);
+      setEditingLine(null);
+    } catch (e) {
+      alert("Could not save: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement(
+    PageHeader,
+    {
+      eyebrow: "Page 7 \xB7 Google Sheet-backed",
+      title: "LMSD Team Management",
+      subtitle: liveEnabled ? "Connected to your Google Sheet" : "Preview mode \u2014 add your Apps Script URL in data.js for live editing"
+    }
+  ), /* @__PURE__ */ React.createElement("div", { className: "table-stack" }, lines.map((line) => {
+    const editing = editingLine === line.line;
+    return /* @__PURE__ */ React.createElement("div", { key: line.line, className: "line-card" }, /* @__PURE__ */ React.createElement("div", { className: "line-card-head" }, /* @__PURE__ */ React.createElement("div", { className: "line-card-title" }, line.line), !editing ? /* @__PURE__ */ React.createElement("button", { className: "edit-btn", onClick: () => setEditingLine(line.line) }, "Edit") : /* @__PURE__ */ React.createElement("div", { className: "edit-actions" }, /* @__PURE__ */ React.createElement("button", { className: "save-btn", disabled: saving, onClick: () => save(line) }, saving ? "Saving\u2026" : "Save"), /* @__PURE__ */ React.createElement("button", { className: "cancel-btn", onClick: () => setEditingLine(null) }, "Cancel"))), /* @__PURE__ */ React.createElement("div", { className: "teams-grid" }, line.teams.map((team, ti) => /* @__PURE__ */ React.createElement("div", { key: ti, className: "team-card" }, /* @__PURE__ */ React.createElement("div", { className: "team-card-head" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        className: "team-name-input",
+        value: team.teamName,
+        disabled: !editing,
+        onChange: (e) => updateLine(line.line, (l) => ({ ...l, teams: l.teams.map((t, i) => i === ti ? { ...t, teamName: e.target.value } : t) }))
+      }
+    ), editing && /* @__PURE__ */ React.createElement("button", { className: "x-btn", onClick: () => removeTeam(line.line, ti) }, "\xD7")), team.members.map((m, mi) => /* @__PURE__ */ React.createElement("div", { className: "member-row", key: mi }, /* @__PURE__ */ React.createElement("input", { placeholder: "Name", value: m.name, disabled: !editing, onChange: (e) => updateMember(line.line, ti, mi, "name", e.target.value) }), /* @__PURE__ */ React.createElement("input", { placeholder: "Post", value: m.post, disabled: !editing, onChange: (e) => updateMember(line.line, ti, mi, "post", e.target.value) }), /* @__PURE__ */ React.createElement("input", { placeholder: "Mobile", value: m.mobile, disabled: !editing, onChange: (e) => updateMember(line.line, ti, mi, "mobile", e.target.value) }), editing && team.members.length > 1 && /* @__PURE__ */ React.createElement("button", { className: "x-btn", onClick: () => removeMember(line.line, ti, mi) }, "\xD7"))), editing && team.members.length < 5 && /* @__PURE__ */ React.createElement("button", { className: "add-link", onClick: () => addMember(line.line, ti) }, "+ Add person (max 5)"))), editing && line.teams.length < 5 && /* @__PURE__ */ React.createElement("button", { className: "add-team-btn", onClick: () => addTeam(line.line) }, "+ Add team (max 5)")));
+  })));
+}
+function PageHeader({ eyebrow, title, subtitle, light }) {
+  return /* @__PURE__ */ React.createElement("header", { className: `page-header ${light ? "light" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "eyebrow" }, eyebrow), /* @__PURE__ */ React.createElement("h1", null, title), subtitle && /* @__PURE__ */ React.createElement("p", null, subtitle));
+}
+function cloneGeo() {
+  const subs = {};
+  Object.entries(SUBSTATIONS).forEach(([k, v]) => { subs[k] = { ...v }; });
+  const lines = LINES.map((l) => ({ ...l, path: l.path.map((p) => [p[0], p[1]] ) }));
+  return { subs, lines };
+}
+
+function findNearestInsertIndex(path, latlng) {
+  // returns segment index i such that inserting after i is best (between i and i+1)
+  if (path.length < 2) return path.length;
+  let best = { idx: path.length - 1, dist: Infinity };
+  for (let i = 0; i < path.length - 1; i++) {
+    const [lat1, lon1] = path[i];
+    const [lat2, lon2] = path[i + 1];
+    const t = Math.max(0, Math.min(1,
+      ((latlng.lat - lat1) * (lat2 - lat1) + (latlng.lng - lon1) * (lon2 - lon1)) /
+      (((lat2 - lat1) ** 2 + (lon2 - lon1) ** 2) || 1)
+    ));
+    const px = lat1 + t * (lat2 - lat1);
+    const py = lon1 + t * (lon2 - lon1);
+    const d = Math.hypot(latlng.lat - px, latlng.lng - py);
+    if (d < best.dist) best = { idx: i, dist: d };
+  }
+  return best.idx + 1;
+}
+
+function subDivIcon(color, big) {
+  const size = big ? 16 : 12;
+  return L.divIcon({
+    className: "editor-sub-icon",
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid #0c1117;box-shadow:0 0 0 1px ${color};cursor:grab;"></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2]
   });
-  sheet.autoResizeColumns(1, 5);
-  sheet.setFrozenRows(headerRow);
-
-  return readLineFromSheet_(sheet);
 }
 
-// ---- Line/Substation Editor geometry storage (single JSON blob per save) ----
-const GEOMETRY_SHEET_NAME = "Geometry";
+function vertexDivIcon(color) {
+  return L.divIcon({
+    className: "editor-vertex-icon",
+    html: `<div style="width:9px;height:9px;border-radius:50%;background:#0c1117;border:2px solid ${color};cursor:grab;"></div>`,
+    iconSize: [9, 9],
+    iconAnchor: [4, 4]
+  });
+}
 
-function getGeometrySheet_() {
-  const ss = getOrCreateSpreadsheet_();
-  let sheet = ss.getSheetByName(GEOMETRY_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(GEOMETRY_SHEET_NAME);
-    sheet.getRange(1, 1, 1, 2).setValues([["Saved at", "Geometry JSON"]]).setFontWeight("bold");
+function EditorPage() {
+  const [geo, setGeo] = useState(() => cloneGeo());
+  const [selectedLine, setSelectedLine] = useState(null);
+  const [subEditOn, setSubEditOn] = useState(true);
+  const [pointMode, setPointMode] = useState("idle"); // idle | addPoint | drawNew | placeSub
+  const [newLineDraft, setNewLineDraft] = useState(null); // { from, to, kv, circuits, status, color, path }
+  const [newSubDraft, setNewSubDraft] = useState(null); // { name, kv, group }
+  const [status, setStatus] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [mode, setMode] = useState("normal");
+  const [hybridOpacity, setHybridOpacity] = useState(55);
+  const [mapZoom, setMapZoom] = useState(9);
+  const [labelMode, setLabelMode] = useState(false);
+  const [showTowerNumbers, setShowTowerNumbers] = useState(true);
+
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const normalLayerRef = useRef(null);
+  const satLayerRef = useRef(null);
+  const linesLayerRef = useRef(null);
+  const subsLayerRef = useRef(null);
+  const vertexLayerRef = useRef(null);
+  const draftLayerRef = useRef(null);
+  const geoRef = useRef(geo);
+  const pointModeRef = useRef(pointMode);
+  const selectedLineRef = useRef(selectedLine);
+  const newLineDraftRef = useRef(newLineDraft);
+  const subEditOnRef = useRef(subEditOn);
+
+  useEffect(() => { geoRef.current = geo; }, [geo]);
+  useEffect(() => { pointModeRef.current = pointMode; }, [pointMode]);
+  useEffect(() => { selectedLineRef.current = selectedLine; }, [selectedLine]);
+  useEffect(() => { newLineDraftRef.current = newLineDraft; }, [newLineDraft]);
+  useEffect(() => { subEditOnRef.current = subEditOn; }, [subEditOn]);
+  const labelModeRef = useRef(labelMode);
+  useEffect(() => { labelModeRef.current = labelMode; }, [labelMode]);
+
+  const liveEnabled = APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("PASTE_");
+
+  useEffect(() => {
+    (async () => {
+      const stored = loadGeoLocal();
+      if (liveEnabled) {
+        try {
+          const res = await fetch(`${APPS_SCRIPT_URL}?action=getgeometry`);
+          const json = await res.json();
+          if (json.ok && json.geometry) {
+            applyGeoOverrides(json.geometry);
+            setGeo(cloneGeo());
+            setStatus("Loaded saved layout from Google Sheet.");
+            return;
+          }
+        } catch (e) { /* fall through to local */ }
+      }
+      if (stored) {
+        applyGeoOverrides(stored);
+        setGeo(cloneGeo());
+        setStatus("Loaded layout saved in this browser.");
+      }
+    })();
+  }, []);
+
+  // ---- map init (once) ----
+  useEffect(() => {
+    const map = L.map(containerRef.current, { zoomControl: true }).setView([18.55, 74.9], 9);
+    mapRef.current = map;
+    map.on("zoomend", () => setMapZoom(map.getZoom()));
+    normalLayerRef.current = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19, crossOrigin: true, attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+    satLayerRef.current = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom: 19, crossOrigin: true, opacity: 0, attribution: "Tiles &copy; Esri" }
+    ).addTo(map);
+    linesLayerRef.current = L.layerGroup().addTo(map);
+    subsLayerRef.current = L.layerGroup().addTo(map);
+    vertexLayerRef.current = L.layerGroup().addTo(map);
+    draftLayerRef.current = L.layerGroup().addTo(map);
+
+    map.on("click", (e) => {
+      const pm = pointModeRef.current;
+      if (pm === "addPoint" && selectedLineRef.current) {
+        setGeo((prev) => {
+          const next = { ...prev, lines: prev.lines.map((l) => ({ ...l })) };
+          const line = next.lines.find((l) => l.key === selectedLineRef.current);
+          if (!line) return prev;
+          const idx = findNearestInsertIndex(line.path, e.latlng);
+          const newPath = line.path.slice();
+          newPath.splice(idx, 0, [e.latlng.lat, e.latlng.lng]);
+          line.path = newPath;
+          return next;
+        });
+      } else if (pm === "drawNew" && newLineDraftRef.current) {
+        setNewLineDraft((prev) => prev ? { ...prev, path: [...prev.path, [e.latlng.lat, e.latlng.lng]] } : prev);
+      } else if (pm === "placeSub" && newSubDraftRef.current) {
+        commitNewSub(e.latlng);
+      }
+    });
+
+    return () => map.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!satLayerRef.current) return;
+    satLayerRef.current.setOpacity(mode === "satellite" ? 1 : mode === "hybrid" ? hybridOpacity / 100 : 0);
+  }, [mode, hybridOpacity]);
+
+  const newSubDraftRef = useRef(newSubDraft);
+  useEffect(() => { newSubDraftRef.current = newSubDraft; }, [newSubDraft]);
+
+  function commitNewSub(latlng) {
+    const draft = newSubDraftRef.current;
+    if (!draft) return;
+    const key = "custom_" + draft.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 24) + "_" + Date.now().toString(36).slice(-4);
+    setGeo((prev) => ({
+      ...prev,
+      subs: { ...prev.subs, [key]: { name: draft.name, lat: latlng.lat, lon: latlng.lng, kv: draft.kv, group: draft.group, approx: false } }
+    }));
+    setNewSubDraft(null);
+    setPointMode("idle");
+    setStatus(`Added substation "${draft.name}". Drag it to fine-tune, then Save.`);
   }
-  return sheet;
-}
 
-function getGeometry_() {
-  const sheet = getGeometrySheet_();
-  if (sheet.getLastRow() < 2) return null;
-  const json = sheet.getRange(sheet.getLastRow(), 2).getValue();
-  if (!json) return null;
-  try {
-    return JSON.parse(json);
-  } catch (e) {
-    return null;
+  // ---- redraw lines ----
+  useEffect(() => {
+    const group = linesLayerRef.current;
+    if (!group) return;
+    group.clearLayers();
+    geo.lines.forEach((line) => {
+      if (!line.path || line.path.length < 2) return;
+      const isSelected = line.key === selectedLine;
+      const color = line.color || KV_COLOR[line.kv] || "#999";
+      L.polyline(line.path, {
+        color,
+        weight: isSelected ? 5 : (line.kv === "220" ? 3 : 3.6),
+        opacity: isSelected ? 1 : 0.75,
+        dashArray: line.status === "planned" ? "6 8" : null
+      }).addTo(group).on("click", (ev) => {
+        L.DomEvent.stopPropagation(ev);
+        setSelectedLine(line.key);
+      }).bindTooltip(`${(geo.subs[line.from] || {}).name || line.from} \u2192 ${(geo.subs[line.to] || {}).name || line.to}`, { sticky: true });
+    });
+  }, [geo.lines, selectedLine]);
+
+  // ---- redraw vertices for selected line ----
+  useEffect(() => {
+    const group = vertexLayerRef.current;
+    if (!group) return;
+    group.clearLayers();
+    const line = geo.lines.find((l) => l.key === selectedLine);
+    if (!line) return;
+    const color = line.color || KV_COLOR[line.kv] || "#999";
+    line.path.forEach((pt, idx) => {
+      const marker = L.marker(pt, { icon: vertexDivIcon(color), draggable: true }).addTo(group);
+      marker.on("dragend", (e) => {
+        const ll = e.target.getLatLng();
+        setGeo((prev) => {
+          const next = { ...prev, lines: prev.lines.map((l) => l.key === line.key ? { ...l, path: l.path.map((p, i) => i === idx ? [ll.lat, ll.lng] : p) } : l) };
+          return next;
+        });
+      });
+      marker.on("contextmenu", (e) => {
+        L.DomEvent.stopPropagation(e);
+        if (line.path.length <= 2) { setStatus("A line needs at least 2 points \u2014 can't delete."); return; }
+        setGeo((prev) => ({ ...prev, lines: prev.lines.map((l) => l.key === line.key ? { ...l, path: l.path.filter((_, i) => i !== idx) } : l) }));
+      });
+      marker.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        if (!labelModeRef.current) return;
+        const currentLabel = computeTowerLabel(line, idx) || "";
+        const val = prompt("Tower number/label for this point (e.g. 12, 12A, 12B \u2014 leave blank for auto):", currentLabel);
+        if (val === null) return;
+        setGeo((prev) => ({ ...prev, lines: prev.lines.map((l) => l.key === line.key ? { ...l, towerLabels: { ...(l.towerLabels || {}), [String(idx)]: val } } : l) }));
+      });
+      const label = computeTowerLabel(line, idx);
+      marker.bindTooltip(label ? `Tower ${label} \u00b7 drag to move \u00b7 right-click to delete${labelMode ? " \u00b7 click to relabel" : ""}` : `Substation end \u00b7 drag to move`, { direction: "top" });
+      if (label && showTowerNumbers) {
+        L.marker(pt, { icon: towerNumIcon(label, mapZoom), interactive: false }).addTo(group);
+      }
+    });
+  }, [geo.lines, selectedLine, labelMode, showTowerNumbers, mapZoom]);
+
+  // ---- redraw substations ----
+  useEffect(() => {
+    const group = subsLayerRef.current;
+    if (!group) return;
+    group.clearLayers();
+    Object.entries(geo.subs).forEach(([key, s]) => {
+      if (s.hidden) return;
+      const color = KV_COLOR[s.kv] || "#ccc";
+      const marker = L.marker([s.lat, s.lon], { icon: subDivIcon(color, key === "karjat"), draggable: subEditOn }).addTo(group);
+      marker.on("dragend", (e) => {
+        const ll = e.target.getLatLng();
+        setGeo((prev) => ({
+          subs: { ...prev.subs, [key]: { ...prev.subs[key], lat: ll.lat, lon: ll.lng } },
+          lines: prev.lines.map((l) => {
+            if (l.from !== key && l.to !== key) return l;
+            const path = l.path.map((p) => [p[0], p[1]]);
+            if (l.from === key && path.length) path[0] = [ll.lat, ll.lng];
+            if (l.to === key && path.length) path[path.length - 1] = [ll.lat, ll.lng];
+            return { ...l, path };
+          })
+        }));
+      });
+      marker.bindTooltip(`${s.name}${s.approx ? " (approx \u2014 drag to correct)" : ""}`, { direction: "top" });
+    });
+  }, [geo.subs, subEditOn]);
+
+  // ---- draft new line preview ----
+  useEffect(() => {
+    const group = draftLayerRef.current;
+    if (!group) return;
+    group.clearLayers();
+    if (newLineDraft && newLineDraft.path.length > 0) {
+      L.polyline(newLineDraft.path, { color: newLineDraft.color, weight: 4, dashArray: "3 6" }).addTo(group);
+      newLineDraft.path.forEach((pt, i) => {
+        L.circleMarker(pt, { radius: 4, color: newLineDraft.color, fillColor: "#fff", fillOpacity: 1 }).addTo(group)
+          .bindTooltip(String(i + 1), { permanent: true, direction: "top", offset: [0, -6] });
+      });
+    }
+  }, [newLineDraft]);
+
+  function startNewLine() {
+    setNewLineDraft({ from: Object.keys(geo.subs)[0], to: Object.keys(geo.subs)[1], kv: "220", circuits: 1, status: "existing", color: "#42d6c8", path: [] });
+    setPointMode("drawNew");
+    setSelectedLine(null);
   }
-}
-
-function saveGeometry_(geometry) {
-  if (!geometry || !geometry.subs || !geometry.lines) {
-    throw new Error("Geometry must include both 'subs' and 'lines'.");
+  function finishNewLine() {
+    if (!newLineDraft || newLineDraft.path.length < 2) { setStatus("Click at least 2 points on the map first."); return; }
+    const key = "custom_line_" + Date.now().toString(36).slice(-6);
+    setGeo((prev) => ({ ...prev, lines: [...prev.lines, { key, ...newLineDraft, km: "" }] }));
+    setNewLineDraft(null);
+    setPointMode("idle");
+    setSelectedLine(key);
+    setStatus("New line added \u2014 select it in the list to keep editing, then Save.");
   }
-  const sheet = getGeometrySheet_();
-  // Keep just one row (the latest save) so the sheet doesn't grow forever.
-  if (sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1);
-  sheet.getRange(2, 1, 1, 2).setValues([[new Date().toISOString(), JSON.stringify(geometry)]]);
-  return geometry;
-}
-
-function jsonOut_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
-}
-
-function doGet(e) {
-  // Note: if you click "Run" on this function directly in the Apps Script
-  // editor, `e` is undefined (there's no real web request) — that's the
-  // "Cannot read properties of undefined (reading 'parameter')" error.
-  // This is expected; test the deployed .../exec URL in a browser instead.
-  const params = (e && e.parameter) || {};
-  const action = (params.action || "getData").toLowerCase();
-  try {
-    if (action === "init") {
-      const url = INIT_();
-      return jsonOut_({ ok: true, message: "Initialized", sheetUrl: url });
-    }
-    if (action === "getdata") {
-      return jsonOut_({ ok: true, lines: getAllData_() });
-    }
-    if (action === "getgeometry") {
-      return jsonOut_({ ok: true, geometry: getGeometry_() });
-    }
-    return jsonOut_({ ok: false, error: "Unknown action: " + action });
-  } catch (err) {
-    return jsonOut_({ ok: false, error: String(err) });
+  function cancelNewLine() {
+    setNewLineDraft(null);
+    setPointMode("idle");
   }
+  function deleteLine(key) {
+    if (!confirm("Delete this line? This can't be undone until you reload without saving.")) return;
+    setGeo((prev) => ({ ...prev, lines: prev.lines.filter((l) => l.key !== key) }));
+    if (selectedLine === key) setSelectedLine(null);
+  }
+  function updateLineField(key, field, value) {
+    setGeo((prev) => ({ ...prev, lines: prev.lines.map((l) => l.key === key ? { ...l, [field]: value } : l) }));
+  }
+  function deleteSub(key) {
+    const usedBy = geo.lines.filter((l) => l.from === key || l.to === key);
+    if (usedBy.length) {
+      if (!confirm(`This substation is used by ${usedBy.length} line(s). Delete it and those lines too?`)) return;
+      setGeo((prev) => ({
+        subs: Object.fromEntries(Object.entries(prev.subs).filter(([k]) => k !== key)),
+        lines: prev.lines.filter((l) => l.from !== key && l.to !== key)
+      }));
+    } else {
+      setGeo((prev) => ({ ...prev, subs: Object.fromEntries(Object.entries(prev.subs).filter(([k]) => k !== key)) }));
+    }
+  }
+
+  async function saveAll() {
+    setSaving(true);
+    setStatus("Saving\u2026");
+    try {
+      applyGeoOverrides(geo, true); // mutate shared SUBSTATIONS/LINES in place
+      saveGeoLocal(geo);
+      if (liveEnabled) {
+        const res = await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "saveGeometry", geometry: geo }) });
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error);
+        setStatus("Saved to your Google Sheet \u2014 visible on every device.");
+      } else {
+        setStatus("Saved in this browser (add your Apps Script URL for cross-device saving).");
+      }
+    } catch (e) {
+      setStatus("Saved locally, but the Sheet sync failed: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function exportJson() {
+    const blob = new Blob([JSON.stringify(geo, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "karjat-line-geometry.json"; a.click();
+    URL.revokeObjectURL(url);
+  }
+  function importJson(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (!parsed.subs || !parsed.lines) throw new Error("Not a valid geometry file");
+        setGeo(parsed);
+        setStatus("Imported " + file.name + " \u2014 review, then click Save.");
+      } catch (err) {
+        alert("Could not read that file: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+  function resetDefaults() {
+    if (!confirm("Discard all edits and reload the built-in defaults?")) return;
+    setGeo({ subs: (() => { const s = {}; Object.entries(DEFAULT_SUBSTATIONS).forEach(([k, v]) => s[k] = { ...v }); return s; })(), lines: DEFAULT_LINES.map((l) => ({ ...l, path: l.path.map((p) => [p[0], p[1]]) })) });
+  }
+
+  const lineOptions = geo.lines.filter((l) => l.path && l.path.length >= 2);
+  const subKeys = Object.keys(geo.subs);
+  const selLine = geo.lines.find((l) => l.key === selectedLine);
+
+  return React.createElement("div", { className: "page" },
+    React.createElement(PageHeader, {
+      eyebrow: "Line & Substation Editor",
+      title: "Draw & correct the network",
+      subtitle: "Drag substations onto their real spot, click a line then \u201cAdd point\u201d to lay towers along the true route, or draw a brand new line."
+    }),
+    React.createElement("div", { className: "editor-toolbar" },
+      React.createElement("label", { className: "editor-toggle" },
+        React.createElement("input", { type: "checkbox", checked: subEditOn, onChange: (e) => setSubEditOn(e.target.checked) }),
+        " Move substations"
+      ),
+      React.createElement("div", { className: "layer-switch" }, ["normal", "hybrid", "satellite"].map((m) =>
+        React.createElement("button", { key: m, className: mode === m ? "active" : "", onClick: () => setMode(m) }, m === "normal" ? "Map" : m === "hybrid" ? "Hybrid" : "Satellite")
+      )),
+      React.createElement("button", {
+        className: "layer-switch-single" + (showTowerNumbers ? " active" : ""),
+        onClick: () => setShowTowerNumbers(!showTowerNumbers),
+        title: "Tower numbers show once you zoom in close"
+      }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"),
+      mode === "hybrid" && React.createElement("div", { className: "opacity-slider" },
+        React.createElement("span", null, "Satellite opacity"),
+        React.createElement("input", { type: "range", min: "0", max: "100", value: hybridOpacity, onChange: (e) => setHybridOpacity(Number(e.target.value)) }),
+        React.createElement("span", null, hybridOpacity, "%")
+      ),
+      React.createElement("button", { className: "save-btn", onClick: saveAll, disabled: saving }, saving ? "Saving\u2026" : "\ud83d\udcbe Save changes"),
+      React.createElement("button", { className: "edit-btn", onClick: exportJson }, "Export JSON"),
+      React.createElement("label", { className: "edit-btn", style: { cursor: "pointer" } }, "Import JSON",
+        React.createElement("input", { type: "file", accept: "application/json", style: { display: "none" }, onChange: importJson })
+      ),
+      React.createElement("button", { className: "cancel-btn", onClick: resetDefaults }, "Reset to defaults")
+    ),
+    status && React.createElement("div", { className: "disclaimer" }, status),
+    React.createElement("div", { className: "editor-layout" },
+      React.createElement("div", { className: "gridmap-wrap", style: { height: "72vh" } },
+        React.createElement("div", { ref: containerRef, className: "gridmap-canvas" })
+      ),
+      React.createElement("div", { className: "side-panel editor-side" },
+          React.createElement("h3", { className: "editor-h3" }, "Lines (", lineOptions.length, ")"),
+            !newLineDraft && React.createElement("button", { className: "add-team-btn", style: { width: "100%", marginBottom: 10 }, onClick: startNewLine }, "+ Draw new line"),
+            newLineDraft && React.createElement("div", { className: "line-card", style: { marginBottom: 10 } },
+              React.createElement("div", { className: "editor-field-row" },
+                React.createElement("label", null, "From"),
+                React.createElement("select", { value: newLineDraft.from, onChange: (e) => setNewLineDraft({ ...newLineDraft, from: e.target.value }) },
+                  subKeys.map((k) => React.createElement("option", { key: k, value: k }, geo.subs[k].name))
+                )
+              ),
+              React.createElement("div", { className: "editor-field-row" },
+                React.createElement("label", null, "To"),
+                React.createElement("select", { value: newLineDraft.to, onChange: (e) => setNewLineDraft({ ...newLineDraft, to: e.target.value }) },
+                  subKeys.map((k) => React.createElement("option", { key: k, value: k }, geo.subs[k].name))
+                )
+              ),
+              React.createElement("div", { className: "editor-field-row" },
+                React.createElement("label", null, "kV"),
+                React.createElement("select", { value: newLineDraft.kv, onChange: (e) => setNewLineDraft({ ...newLineDraft, kv: e.target.value }) },
+                  ["765", "400", "220", "planned"].map((v) => React.createElement("option", { key: v, value: v }, v))
+                ),
+                React.createElement("input", { type: "color", value: newLineDraft.color, onChange: (e) => setNewLineDraft({ ...newLineDraft, color: e.target.value }) })
+              ),
+              React.createElement("div", { className: "empty-hint" }, "Click points on the map to lay towers (", newLineDraft.path.length, " placed). Click order matters."),
+              React.createElement("div", { className: "edit-actions" },
+                React.createElement("button", { className: "save-btn", onClick: finishNewLine }, "Finish line"),
+                React.createElement("button", { className: "cancel-btn", onClick: cancelNewLine }, "Cancel")
+              )
+            ),
+            React.createElement("div", { className: "editor-line-list" },
+              lineOptions.map((l) => React.createElement("div", {
+                key: l.key,
+                className: "editor-line-item" + (selectedLine === l.key ? " active" : ""),
+                onClick: () => { setSelectedLine(l.key); setPointMode("idle"); }
+              },
+                React.createElement("span", { className: "editor-line-swatch", style: { background: l.color || KV_COLOR[l.kv] } }),
+                React.createElement("span", null, (geo.subs[l.from] || {}).name || l.from, " \u2192 ", (geo.subs[l.to] || {}).name || l.to)
+              ))
+            ),
+            selLine && React.createElement("div", { className: "line-card" },
+              React.createElement("div", { className: "line-card-title" }, "Editing: ", (geo.subs[selLine.from] || {}).name, " \u2192 ", (geo.subs[selLine.to] || {}).name),
+              React.createElement("div", { className: "editor-field-row" },
+                React.createElement("label", null, "Color"),
+                React.createElement("input", { type: "color", value: selLine.color || KV_COLOR[selLine.kv] || "#42d6c8", onChange: (e) => updateLineField(selLine.key, "color", e.target.value) })
+              ),
+              React.createElement("div", { className: "editor-field-row" },
+                React.createElement("label", null, "Circuits"),
+                React.createElement("input", { type: "number", min: 1, max: 4, value: selLine.circuits, onChange: (e) => updateLineField(selLine.key, "circuits", Number(e.target.value)) })
+              ),
+              React.createElement("div", { className: "editor-field-row" },
+                React.createElement("label", null, "Status"),
+                React.createElement("select", { value: selLine.status, onChange: (e) => updateLineField(selLine.key, "status", e.target.value) },
+                  ["existing", "planned"].map((v) => React.createElement("option", { key: v, value: v }, v))
+                )
+              ),
+              React.createElement("div", { className: "editor-field-row" },
+                React.createElement("label", null, "km label"),
+                React.createElement("input", { type: "text", value: selLine.km || "", onChange: (e) => updateLineField(selLine.key, "km", e.target.value) })
+              ),
+              React.createElement("div", { className: "editor-field-row" },
+                React.createElement("label", null, "Tower numbering starts at"),
+                React.createElement("select", { value: selLine.numberFrom || "from", onChange: (e) => updateLineField(selLine.key, "numberFrom", e.target.value) },
+                  React.createElement("option", { value: "from" }, (geo.subs[selLine.from] || {}).name || selLine.from),
+                  React.createElement("option", { value: "to" }, (geo.subs[selLine.to] || {}).name || selLine.to)
+                )
+              ),
+              React.createElement("button", {
+                className: pointMode === "addPoint" ? "save-btn" : "edit-btn",
+                style: { width: "100%", margin: "8px 0" },
+                onClick: () => setPointMode(pointMode === "addPoint" ? "idle" : "addPoint")
+              }, pointMode === "addPoint" ? "\u2713 Click the map to add a tower (click again to stop)" : "+ Add tower point"),
+              React.createElement("button", {
+                className: labelMode ? "save-btn" : "edit-btn",
+                style: { width: "100%", marginBottom: 8 },
+                onClick: () => setLabelMode(!labelMode)
+              }, labelMode ? "\u2713 Click any tower point to relabel it (e.g. 12A)" : "Edit tower numbers"),
+              React.createElement("div", { className: "empty-hint" }, selLine.path.length - 2 > 0 ? selLine.path.length - 2 : 0, " tower points \u00b7 drag a point to move it \u00b7 right-click to delete it", labelMode ? " \u00b7 click a point to type a custom number" : ""),
+              React.createElement("button", { className: "cancel-btn", style: { width: "100%", marginTop: 8 }, onClick: () => deleteLine(selLine.key) }, "Delete this line")
+            ),
+            React.createElement("h3", { className: "editor-h3" }, "Substations (", subKeys.length, ")"),
+            !newSubDraft && React.createElement("button", { className: "add-team-btn", style: { width: "100%", marginBottom: 10 }, onClick: () => { const name = prompt("Substation name (e.g. 220 kV Example SS):"); if (!name) return; const kv = prompt("Voltage class (400 / 220 / 765 / planned):", "220") || "220"; setNewSubDraft({ name, kv, group: "custom" }); setPointMode("placeSub"); } }, "+ Add substation"),
+            newSubDraft && React.createElement("div", { className: "disclaimer" }, "Click anywhere on the map to place \u201c", newSubDraft.name, "\u201d."),
+            React.createElement("div", { className: "editor-sub-list" },
+              subKeys.map((k) => React.createElement("div", { key: k, className: "editor-sub-item" },
+                React.createElement("span", { className: "editor-line-swatch", style: { background: KV_COLOR[geo.subs[k].kv] || "#ccc" } }),
+                React.createElement("span", { className: "editor-sub-name" }, geo.subs[k].name, geo.subs[k].approx && React.createElement("span", { className: "tag-approx" }, " approx")),
+                React.createElement("span", { className: "editor-sub-coords mono" }, geo.subs[k].lat.toFixed(4), ", ", geo.subs[k].lon.toFixed(4)),
+                React.createElement("button", { className: "x-btn", onClick: () => deleteSub(k) }, "\xD7")
+              ))
+            )
+        )
+      )
+    );
 }
 
-function doPost(e) {
-  try {
-    if (!e || !e.postData) {
-      return jsonOut_({ ok: false, error: "No request body \u2014 doPost must be called via the deployed web app URL, not run manually." });
-    }
-    const body = JSON.parse(e.postData.contents);
-    const action = (body.action || "").toLowerCase();
-    if (action === "saveteams") {
-      const result = saveTeamsForLine_(body.line, body.teams);
-      return jsonOut_({ ok: true, line: result });
-    }
-    if (action === "savegeometry") {
-      const result = saveGeometry_(body.geometry);
-      return jsonOut_({ ok: true, geometry: result });
-    }
-    return jsonOut_({ ok: false, error: "Unknown action: " + action });
-  } catch (err) {
-    return jsonOut_({ ok: false, error: String(err) });
-  }
+const ROUTES = {
+  "": { label: "Home Map", comp: HomePage },
+  "lmsd": { label: "LMSD Map", comp: LmsdPage },
+  "maintenance": { label: "Maintenance", comp: MaintenancePage },
+  "coordinates": { label: "Coordinates", comp: CoordinatesPage },
+  "statewide": { label: "Statewide", comp: StatewidePage },
+  "weather": { label: "Weather", comp: WeatherPage },
+  "teams": { label: "LMSD Teams", comp: TeamsPage },
+  "editor": { label: "Line Editor", comp: EditorPage }
+};
+function App() {
+  const [route, setRoute] = useState(window.location.hash.replace("#/", "") || "");
+  useEffect(() => {
+    const onHashChange = () => setRoute(window.location.hash.replace("#/", ""));
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+  const Current = (ROUTES[route] || ROUTES[""]).comp;
+  return /* @__PURE__ */ React.createElement("div", { className: "app-shell" }, /* @__PURE__ */ React.createElement("nav", { className: "topnav" }, /* @__PURE__ */ React.createElement("div", { className: "brand" }, /* @__PURE__ */ React.createElement("span", { className: "brand-dot" }), "400 kV Karjat Portal"), /* @__PURE__ */ React.createElement("div", { className: "nav-links" }, Object.entries(ROUTES).map(([path, r]) => /* @__PURE__ */ React.createElement("a", { key: path, href: `#/${path}`, className: route === path ? "active" : "" }, r.label)))), /* @__PURE__ */ React.createElement("main", null, /* @__PURE__ */ React.createElement(Current, null)), /* @__PURE__ */ React.createElement("footer", { className: "app-footer" }, "Working reference portal built from field-supplied data ", "\u2014", " not an official MSETCL/POWERGRID system."));
 }
+try {
+  ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
+} catch (err) {
+  document.getElementById("root").innerHTML = '<div style="padding:40px;font-family:monospace;color:#f87171;background:#0c1117;min-height:100vh;"><h2>Something broke while starting the app</h2><pre style="white-space:pre-wrap">' + (err && err.stack ? err.stack : String(err)) + "</pre></div>";
+  console.error(err);
+}
+
+</script>
+</body>
+</html>
