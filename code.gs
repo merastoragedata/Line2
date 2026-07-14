@@ -325,7 +325,12 @@ function jsonOut_(obj) {
 }
 
 function doGet(e) {
-  const action = (e.parameter.action || "getData").toLowerCase();
+  // Note: if you click "Run" on this function directly in the Apps Script
+  // editor, `e` is undefined (there's no real web request) — that's the
+  // "Cannot read properties of undefined (reading 'parameter')" error.
+  // This is expected; test the deployed .../exec URL in a browser instead.
+  const params = (e && e.parameter) || {};
+  const action = (params.action || "getData").toLowerCase();
   try {
     if (action === "init") {
       const url = INIT_();
@@ -345,6 +350,9 @@ function doGet(e) {
 
 function doPost(e) {
   try {
+    if (!e || !e.postData) {
+      return jsonOut_({ ok: false, error: "No request body \u2014 doPost must be called via the deployed web app URL, not run manually." });
+    }
     const body = JSON.parse(e.postData.contents);
     const action = (body.action || "").toLowerCase();
     if (action === "saveteams") {
