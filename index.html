@@ -25,7 +25,7 @@
   --radius: 14px;
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: "Inter", system-ui, sans-serif; }
 h1, h2, h3 { font-family: "Space Grotesk", sans-serif; margin: 0; }
 .mono, .mono td { font-family: "JetBrains Mono", monospace; }
@@ -101,6 +101,17 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .table-stack { display: flex; flex-direction: column; gap: 14px; }
 .line-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
 .line-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+.line-card-head-right { display: flex; align-items: center; gap: 12px; }
+.editor-teams-grid { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); }
+.lmsd-directory { margin-top: 22px; }
+.lmsd-directory-heading { font-family: "Space Grotesk", sans-serif; font-size: 18px; margin-bottom: 12px; }
+.lmsd-directory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.lmsd-directory-card { background: var(--panel); border: 1px solid var(--border); border-left: 4px solid; border-radius: var(--radius); padding: 14px 16px; }
+.lmsd-directory-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-family: "Space Grotesk", sans-serif; font-size: 14px; margin-bottom: 10px; }
+.lmsd-directory-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.lmsd-directory-row { border-top: 1px solid var(--border); padding: 8px 0; }
+.lmsd-directory-row:first-of-type { border-top: none; padding-top: 0; }
+.lmsd-directory-line { font-size: 12px; color: var(--ink-muted); margin-bottom: 4px; }
 .line-card-title { font-family: "Space Grotesk"; font-weight: 600; font-size: 15px; }
 .line-card-length { font-family: "JetBrains Mono"; color: var(--cyan); font-size: 13px; }
 .mini-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 12.5px; }
@@ -214,11 +225,13 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .editor-sub-item:hover { background: var(--panel2); }
 .editor-sub-name { flex: 1; }
 .editor-sub-coords { color: var(--ink-muted); font-size: 10.5px; }
-.tower-num { position: relative; left: -50%; top: -26px; background: #0c1117; color: #fff; font-family: "JetBrains Mono", monospace; font-weight: 700; line-height: 1; border-radius: 4px; border: 1.5px solid rgba(255,255,255,0.5); white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.5); pointer-events: none; }
-.sub-name-label { position: relative; left: 10px; top: 6px; background: rgba(12,17,23,0.82); color: #e7ecf3; font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 11px; line-height: 1.15; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.18); white-space: nowrap; pointer-events: none; }
-.grat-label { position: relative; top: -8px; left: 2px; font-family: "JetBrains Mono", monospace; font-size: 9px; color: #6b7f96; background: rgba(255,255,255,0.75); padding: 0 3px; border-radius: 2px; pointer-events: none; white-space: nowrap; }
+.tower-num { display: inline-block; position: relative; left: -50%; top: -26px; background: #fff8e1; color: #0c1117; font-family: "JetBrains Mono", monospace; font-weight: 800; line-height: 1; border-radius: 4px; border: 1.5px solid #0c1117; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.5); pointer-events: none; }
+.sub-name-label { display: inline-block; position: relative; left: 10px; top: 6px; background: rgba(12,17,23,0.88); color: #e7ecf3; font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 11px; line-height: 1.15; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.18); white-space: nowrap; pointer-events: none; }
+.grat-label { display: inline-block; position: relative; top: -8px; left: 2px; font-family: "JetBrains Mono", monospace; font-size: 9px; color: #6b7f96; background: rgba(255,255,255,0.75); padding: 0 3px; border-radius: 2px; pointer-events: none; white-space: nowrap; }
+.line-name-label { display: inline-block; position: relative; left: -50%; top: -8px; background: rgba(255,255,255,0.9); color: #17222e; font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 10.5px; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15); white-space: nowrap; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
 .layer-switch-single { background: var(--panel2); border: 1px solid var(--border); color: var(--ink-muted); border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
 .layer-switch-single.active { background: rgba(66,214,200,0.14); border-color: var(--cyan); color: var(--cyan); }
+.zoom-readout { font-family: "JetBrains Mono", monospace; font-size: 11.5px; color: var(--ink-muted); background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
 
 /* ---------------- Print Maps ---------------- */
 .print-page-wrap { display: flex; flex-direction: column; gap: 14px; align-items: center; }
@@ -351,6 +364,7 @@ const DEFAULT_SUBSTATIONS = {
   bothe: { name: "220 kV Bothe SS", lat: 17.96, lon: 74.4, kv: "220", group: "state220", approx: true },
   jejuri1: { name: "220 kV Jejuri-I SS", lat: 18.279, lon: 74.135, kv: "220", group: "state220" },
   baramati: { name: "220 kV Baramati SS", lat: 18.1516, lon: 74.5815, kv: "220", group: "state220" },
+  kurkumbh: { name: "220 kV Kurkumbh SS", lat: 18.397533, lon: 74.52095, kv: "220", group: "state220", approx: true },
   walchandnagar: { name: "220 kV Walchandnagar SS", lat: 18.026889, lon: 74.772115, kv: "220", group: "state220" },
   supamidc: { name: "220 kV Supa MIDC SS", lat: 18.953299, lon: 74.519556, kv: "220", group: "state220", approx: true },
   bblr: { name: "400 kV BBLR SS (Babhleshwar, Tal. Rahata)", lat: 19.620275, lon: 74.491388, kv: "400", group: "state220" },
@@ -476,47 +490,48 @@ const DEFAULT_LINES = [
     path: [[18.448778, 74.746306], [18.39, 74.92], [18.32, 75.05], [18.262806, 75.151167]]
   },
   // ---- Statewide 400kV backbone (illustrative direct alignments) ----
-  { key: "kharghar_kalwa", from: "kharghar", to: "kalwa", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "kharghar_chakan", from: "kharghar", to: "chakan", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "chakan_punepg", from: "chakan", to: "punepg", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "chakan_lonikand1", from: "chakan", to: "lonikand1", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "shikrapur_lonikand1", from: "shikrapur", to: "lonikand1", kv: "765", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "lonikand1_lonikand2", from: "lonikand1", to: "lonikand2", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "punepg_kiv", from: "punepg", to: "kiv", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "kiv_karad", from: "kiv", to: "karad", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "punepg_jejuri", from: "punepg", to: "jejuri", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "lonikand2_kalamb", from: "lonikand2", to: "kalamb", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "kalamb_chandrapur1", from: "kalamb", to: "chandrapur1", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "chandrapur1_chandrapur2", from: "chandrapur1", to: "chandrapur2", kv: "400", circuits: 2, status: "existing", km: "", path: [] },
-  { key: "chandrapur1_kumbhargaon", from: "chandrapur1", to: "kumbhargaon", kv: "400", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "lonikand2_puneeast_state", from: "lonikand2", to: "puneeast", kv: "765", circuits: 1, status: "planned", km: "", path: [] },
+  { key: "kharghar_kalwa", from: "kharghar", to: "kalwa", kv: "400", circuits: 1, status: "existing", km: "", path: [[19.038129, 73.062497], [19.167205, 72.994114]] },
+  { key: "kharghar_chakan", from: "kharghar", to: "chakan", kv: "400", circuits: 1, status: "existing", km: "", path: [[19.038129, 73.062497], [18.740187, 73.841062]] },
+  { key: "chakan_punepg", from: "chakan", to: "punepg", kv: "400", circuits: 1, status: "existing", km: "", path: [[18.740187, 73.841062], [18.794584, 73.697426]] },
+  { key: "chakan_lonikand1", from: "chakan", to: "lonikand1", kv: "400", circuits: 1, status: "existing", km: "", path: [[18.740187, 73.841062], [18.637, 74.0385]] },
+  { key: "shikrapur_lonikand1", from: "shikrapur", to: "lonikand1", kv: "765", circuits: 1, status: "existing", km: "", path: [[18.716774, 74.173417], [18.637, 74.0385]] },
+  { key: "lonikand1_lonikand2", from: "lonikand1", to: "lonikand2", kv: "400", circuits: 1, status: "existing", km: "", path: [[18.637, 74.0385], [18.639778, 74.040083]] },
+  { key: "punepg_kiv", from: "punepg", to: "kiv", kv: "400", circuits: 1, status: "existing", km: "", path: [[18.794584, 73.697426], [17.297316, 74.139067]] },
+  { key: "kiv_karad", from: "kiv", to: "karad", kv: "400", circuits: 1, status: "existing", km: "", path: [[17.297316, 74.139067], [17.302972, 74.140245]] },
+  { key: "punepg_jejuri", from: "punepg", to: "jejuri", kv: "400", circuits: 1, status: "existing", km: "", path: [[18.794584, 73.697426], [18.282896, 74.138483]] },
+  { key: "lonikand2_kalamb", from: "lonikand2", to: "kalamb", kv: "400", circuits: 1, status: "existing", km: "", path: [[18.639778, 74.040083], [18.3958, 76.0894]] },
+  { key: "kalamb_chandrapur1", from: "kalamb", to: "chandrapur1", kv: "400", circuits: 1, status: "existing", km: "", path: [[18.3958, 76.0894], [19.986132, 79.289196]] },
+  { key: "chandrapur1_chandrapur2", from: "chandrapur1", to: "chandrapur2", kv: "400", circuits: 2, status: "existing", km: "", path: [[19.986132, 79.289196], [19.99, 79.292]] },
+  { key: "chandrapur1_kumbhargaon", from: "chandrapur1", to: "kumbhargaon", kv: "400", circuits: 1, status: "existing", km: "", path: [[19.986132, 79.289196], [19.916, 79.117]] },
+  { key: "lonikand2_puneeast_state", from: "lonikand2", to: "puneeast", kv: "765", circuits: 1, status: "planned", km: "", path: [[18.639778, 74.040083], [18.729387, 75.020199]] },
   // ---- Statewide 220kV (Karjat-bus wider network diagram) ----
-  { key: "phaltan_lonand", from: "phaltan", to: "lonand", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "phaltan_bothe", from: "phaltan", to: "bothe", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "phaltan_jejuri1", from: "phaltan", to: "jejuri1", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "lonand_baramati", from: "lonand", to: "baramati", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "jejuri1_walchandnagar", from: "jejuri1", to: "walchandnagar", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "baramati_walchandnagar", from: "baramati", to: "walchandnagar", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "baramati_shirsuphal", from: "baramati", to: "shirsuphal", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "walchandnagar_bhigwan", from: "walchandnagar", to: "bhigwan", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "bhigwan_belwandi", from: "bhigwan", to: "belwandi", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "supamidc_karjat", from: "supamidc", to: "karjat", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "bblr_jeurkhandke", from: "bblr", to: "jeurkhandke", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "karjat_jeurkhandke", from: "karjat", to: "jeurkhandke", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "jeurkhandke_patoda", from: "jeurkhandke", to: "patoda", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "jeur_karkambh", from: "jeur", to: "karkambh", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "karkambh_paranda", from: "karkambh", to: "paranda", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "paranda_barshi", from: "paranda", to: "barshi", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "paranda_osmanabad", from: "paranda", to: "osmanabad", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "osmanabad_solapurs2", from: "osmanabad", to: "solapurs2", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "osmanabad_tuljapur", from: "osmanabad", to: "tuljapur", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "lamboti_tuljapur", from: "lamboti", to: "tuljapur", kv: "220", circuits: 1, status: "planned", km: "feed", path: [] },
-  { key: "lamboti_karkambh", from: "lamboti", to: "karkambh", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "karkambh_tembhurni", from: "karkambh", to: "tembhurni", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "tembhurni_malinagar", from: "tembhurni", to: "malinagar", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "malinagar_bhalwani", from: "malinagar", to: "bhalwani", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "bhalwani_pandharpur1", from: "bhalwani", to: "pandharpur1", kv: "220", circuits: 1, status: "existing", km: "", path: [] },
-  { key: "pandharpur1_pandharpur2", from: "pandharpur1", to: "pandharpur2", kv: "220", circuits: 2, status: "existing", km: "", path: [] }
+  { key: "phaltan_lonand", from: "phaltan", to: "lonand", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.013506, 74.332742], [17.93, 74.15]] },
+  { key: "phaltan_bothe", from: "phaltan", to: "bothe", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.013506, 74.332742], [17.96, 74.4]] },
+  { key: "phaltan_jejuri1", from: "phaltan", to: "jejuri1", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.013506, 74.332742], [18.279, 74.135]] },
+  { key: "lonand_baramati", from: "lonand", to: "baramati", kv: "220", circuits: 1, status: "existing", km: "", path: [[17.93, 74.15], [18.1516, 74.5815]] },
+  { key: "jejuri1_walchandnagar", from: "jejuri1", to: "walchandnagar", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.279, 74.135], [18.026889, 74.772115]] },
+  { key: "baramati_walchandnagar", from: "baramati", to: "walchandnagar", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.1516, 74.5815], [18.026889, 74.772115]] },
+  { key: "baramati_shirsuphal", from: "baramati", to: "shirsuphal", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.1516, 74.5815], [18.320306, 74.56975]] },
+  { key: "baramati_kurkumbh", from: "baramati", to: "kurkumbh", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.1516, 74.5815], [18.397533, 74.52095]] },
+  { key: "walchandnagar_bhigwan", from: "walchandnagar", to: "bhigwan", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.026889, 74.772115], [18.304861, 74.758389]] },
+  { key: "bhigwan_belwandi", from: "bhigwan", to: "belwandi", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.304861, 74.758389], [18.685139, 74.62575]] },
+  { key: "supamidc_karjat", from: "supamidc", to: "karjat", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.953299, 74.519556], [18.448778, 74.746306]] },
+  { key: "bblr_jeurkhandke", from: "bblr", to: "jeurkhandke", kv: "220", circuits: 1, status: "existing", km: "", path: [[19.620275, 74.491388], [18.72, 75.9]] },
+  { key: "karjat_jeurkhandke", from: "karjat", to: "jeurkhandke", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.448778, 74.746306], [18.72, 75.9]] },
+  { key: "jeurkhandke_patoda", from: "jeurkhandke", to: "patoda", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.72, 75.9], [18.68, 75.83]] },
+  { key: "jeur_karkambh", from: "jeur", to: "karkambh", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.262806, 75.151167], [17.86, 75.15]] },
+  { key: "karkambh_paranda", from: "karkambh", to: "paranda", kv: "220", circuits: 1, status: "existing", km: "", path: [[17.86, 75.15], [18.27, 75.45]] },
+  { key: "paranda_barshi", from: "paranda", to: "barshi", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.27, 75.45], [18.250275, 75.701348]] },
+  { key: "paranda_osmanabad", from: "paranda", to: "osmanabad", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.27, 75.45], [18.136697, 76.067609]] },
+  { key: "osmanabad_solapurs2", from: "osmanabad", to: "solapurs2", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.136697, 76.067609], [17.707137, 75.878999]] },
+  { key: "osmanabad_tuljapur", from: "osmanabad", to: "tuljapur", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.136697, 76.067609], [17.953054, 76.026304]] },
+  { key: "lamboti_tuljapur", from: "lamboti", to: "tuljapur", kv: "220", circuits: 1, status: "planned", km: "feed", path: [[17.777494, 75.735356], [17.953054, 76.026304]] },
+  { key: "lamboti_karkambh", from: "lamboti", to: "karkambh", kv: "220", circuits: 1, status: "existing", km: "", path: [[17.777494, 75.735356], [17.86, 75.15]] },
+  { key: "karkambh_tembhurni", from: "karkambh", to: "tembhurni", kv: "220", circuits: 1, status: "existing", km: "", path: [[17.86, 75.15], [18.01, 75.1]] },
+  { key: "tembhurni_malinagar", from: "tembhurni", to: "malinagar", kv: "220", circuits: 1, status: "existing", km: "", path: [[18.01, 75.1], [17.96, 75.4]] },
+  { key: "malinagar_bhalwani", from: "malinagar", to: "bhalwani", kv: "220", circuits: 1, status: "existing", km: "", path: [[17.96, 75.4], [17.8, 75.5]] },
+  { key: "bhalwani_pandharpur1", from: "bhalwani", to: "pandharpur1", kv: "220", circuits: 1, status: "existing", km: "", path: [[17.8, 75.5], [17.654623, 75.325002]] },
+  { key: "pandharpur1_pandharpur2", from: "pandharpur1", to: "pandharpur2", kv: "220", circuits: 2, status: "existing", km: "", path: [[17.654623, 75.325002], [17.657, 75.327]] }
 ];
 const JURISDICTION_SEED = [
   {
@@ -627,33 +642,6 @@ function applyGeoOverrides(geo) {
   if (stored) applyGeoOverrides(stored);
 })();
 
-const LMSD_ZONES = [
-  {
-    name: "LMSD Lonikand",
-    color: "#42d6c8",
-    poly: [[18.4, 74.55], [18.63, 74.55], [18.7, 74.05], [18.4, 74]]
-  },
-  {
-    name: "400 kV LMSD Lamboti",
-    color: "#f2a53c",
-    poly: [[18.3, 74.9], [18.7, 74.9], [18.7, 75.75], [18.3, 75.75]]
-  },
-  {
-    name: "LMSD Girwali",
-    color: "#ef4d8f",
-    poly: [[18.35, 75.75], [18.95, 75.75], [18.95, 76.55], [18.35, 76.55]]
-  },
-  {
-    name: "LMSD Kedgaon",
-    color: "#a78bfa",
-    poly: [[18.6, 74.5], [19.15, 74.5], [19.15, 74.9], [18.6, 74.9]]
-  },
-  {
-    name: "LMSD Baramati",
-    color: "#4ade80",
-    poly: [[18.1, 74.45], [18.45, 74.45], [18.45, 75.25], [18.1, 75.25]]
-  }
-];
 const WMO = {
   0: { label: "Clear sky", mood: "sunny", icon: "sun" },
   1: { label: "Mainly clear", mood: "sunny", icon: "sun" },
@@ -778,16 +766,51 @@ function ribbonFromPath(path, halfWidthMeters) {
   const right = offsetPath(path, -halfWidthMeters).slice().reverse();
   return left.concat(right);
 }
-const DIVISION_PALETTE = [
-  "#42d6c8", "#f2a53c", "#ef4d8f", "#a78bfa", "#4ade80",
-  "#60a5fa", "#fb923c", "#e879f9", "#facc15", "#34d399", "#f87171", "#818cf8"
-];
-const DIVISION_COLOR_SEED = { "LMSD Lonikand": "#42d6c8", "400 kV LMSD Lamboti": "#f2a53c", "LMSD Girwali": "#ef4d8f", "LMSD Kedgaon": "#a78bfa", "LMSD Baramati": "#4ade80" };
-function divisionColor(name) {
-  if (DIVISION_COLOR_SEED[name]) return DIVISION_COLOR_SEED[name];
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return DIVISION_PALETTE[h % DIVISION_PALETTE.length];
+const CORRIDOR_HALF_WIDTH_M = 2600; // 10x the original 260m half-width
+function hexToHsl(hex) {
+  const m = hex.replace("#", "");
+  const r = parseInt(m.substring(0, 2), 16) / 255;
+  const g = parseInt(m.substring(2, 4), 16) / 255;
+  const b = parseInt(m.substring(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d !== 0) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    switch (max) {
+      case r: h = 60 * (((g - b) / d) % 6); break;
+      case g: h = 60 * ((b - r) / d + 2); break;
+      case b: h = 60 * ((r - g) / d + 4); break;
+    }
+  }
+  if (h < 0) h += 360;
+  return { h, s: s * 100, l: l * 100 };
+}
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
+  const toHex = (v) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+// Corridor colour is deliberately the OPPOSITE hue of whatever colour the
+// line itself is drawn in (KV_COLOR), so the wide LMSD corridor never gets
+// confused with the line's own kV colour coding. Different divisions on the
+// same kV class still get distinct shades within that opposite-hue family.
+function divisionColor(name, kv) {
+  const base = KV_COLOR[kv] || "#93a2b3";
+  const { h } = hexToHsl(base);
+  const oppositeHue = (h + 180) % 360;
+  let hashv = 0;
+  for (let i = 0; i < name.length; i++) hashv = (hashv * 31 + name.charCodeAt(i)) >>> 0;
+  const hueJitter = (hashv % 40) - 20; // +/-20deg around the opposite hue
+  const lightness = 42 + (hashv % 22); // 42-64%
+  return hslToHex((oppositeHue + hueJitter + 360) % 360, 68, lightness);
 }
 // Builds one ribbon polygon per (line, segment) pair: the corridor of that
 // LMSD division's stretch of that physical circuit. Falls back gracefully
@@ -800,6 +823,8 @@ function buildLmsdCorridors(jurisdictionData) {
     if (fullPath.length < 2) return;
     const totalKm = parseKmTotal(entry.length);
     const segTeamAligned = entry.segments.length === entry.teams.length;
+    const repLine = LINES.find((l) => l.key === entry.lineKeys[0]);
+    const kv = repLine ? repLine.kv : "220";
     entry.segments.forEach((seg, i) => {
       const [c0, c1] = parseChainageRange(seg.chainage);
       const f0 = totalKm ? c0 / totalKm : 0;
@@ -813,8 +838,8 @@ function buildLmsdCorridors(jurisdictionData) {
         line: entry.line,
         division: seg.division,
         chainage: seg.chainage,
-        color: divisionColor(seg.division),
-        polygon: ribbonFromPath(slice, 260),
+        color: divisionColor(seg.division, kv),
+        polygon: ribbonFromPath(slice, CORRIDOR_HALF_WIDTH_M),
         officers
       });
     });
@@ -934,8 +959,8 @@ function GridMap({
           color: c.color,
           weight: 1,
           fillColor: c.color,
-          fillOpacity: 0.38,
-          opacity: 0.85
+          fillOpacity: 0.24,
+          opacity: 0.75
         }).addTo(group);
         const officerLines = (c.officers || []).map((m) => `${m.name} (${m.post}) \xB7 ${m.mobile}`);
         const html = `<div class="popup-card">
@@ -946,8 +971,8 @@ function GridMap({
           </div>`;
         poly.bindTooltip(`${c.division} \u00b7 ${c.chainage}`, { sticky: true });
         poly.bindPopup(html);
-        poly.on("mouseover", () => poly.setStyle({ fillOpacity: 0.6, weight: 2 }));
-        poly.on("mouseout", () => poly.setStyle({ fillOpacity: 0.38, weight: 1 }));
+        poly.on("mouseover", () => poly.setStyle({ fillOpacity: 0.45, weight: 2 }));
+        poly.on("mouseout", () => poly.setStyle({ fillOpacity: 0.24, weight: 1 }));
         poly.on("click", () => onSelect(c.division, "zone"));
       });
     }
@@ -987,6 +1012,21 @@ function GridMap({
           lineCap: "round"
         }).addTo(group).bindTooltip(`${line.from} \u2192 ${line.to} (${line.km || ""})`, { sticky: true });
       });
+      if (emphasized && line.path.length > 1) {
+        const midPt = interpolateAlong(line.path, 0.5);
+        const fromName = (SUBSTATIONS[line.from] || {}).name || line.from;
+        const toName = (SUBSTATIONS[line.to] || {}).name || line.to;
+        const short = (n) => n.replace("400 kV ", "").replace("220 kV ", "").replace("765 kV ", "");
+        L.marker(midPt, {
+          icon: L.divIcon({
+            className: "line-name-icon",
+            html: `<div class="line-name-label">${short(fromName)} \u2194 ${short(toName)}</div>`,
+            iconSize: [1, 1],
+            iconAnchor: [0, 0]
+          }),
+          interactive: false
+        }).addTo(group);
+      }
       if (showTowerNumbers && emphasized && mapZoom >= 13 && line.path.length > 2) {
         line.path.forEach((pt, idx) => {
           const label = computeTowerLabel(line, idx);
@@ -1067,7 +1107,7 @@ function GridMap({
       setDownloading(false);
     }
   }, [downloadName]);
-  return /* @__PURE__ */ React.createElement("div", { className: "gridmap-wrap", style: { height } }, /* @__PURE__ */ React.createElement("div", { ref: containerRef, className: "gridmap-canvas" }), /* @__PURE__ */ React.createElement("div", { className: "map-controls" }, /* @__PURE__ */ React.createElement("div", { className: "layer-switch" }, ["normal", "hybrid", "satellite"].map((m) => /* @__PURE__ */ React.createElement("button", { key: m, className: mode === m ? "active" : "", onClick: () => setMode(m) }, m === "normal" ? "Map" : m === "hybrid" ? "Hybrid" : "Satellite"))), /* @__PURE__ */ React.createElement("button", { className: "layer-switch-single" + (showTowerNumbers ? " active" : ""), onClick: () => setShowTowerNumbers(!showTowerNumbers), title: "Tower numbers show once you zoom in close" }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"), mode === "hybrid" && /* @__PURE__ */ React.createElement("div", { className: "opacity-slider" }, /* @__PURE__ */ React.createElement("span", null, "Satellite opacity"), /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "gridmap-wrap", style: { height } }, /* @__PURE__ */ React.createElement("div", { ref: containerRef, className: "gridmap-canvas" }), /* @__PURE__ */ React.createElement("div", { className: "map-controls" }, /* @__PURE__ */ React.createElement("div", { className: "layer-switch" }, ["normal", "hybrid", "satellite"].map((m) => /* @__PURE__ */ React.createElement("button", { key: m, className: mode === m ? "active" : "", onClick: () => setMode(m) }, m === "normal" ? "Map" : m === "hybrid" ? "Hybrid" : "Satellite"))), /* @__PURE__ */ React.createElement("button", { className: "layer-switch-single" + (showTowerNumbers ? " active" : ""), onClick: () => setShowTowerNumbers(!showTowerNumbers), title: "Tower numbers show once you zoom in close" }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"), /* @__PURE__ */ React.createElement("div", { className: "zoom-readout", title: "Map zoom level" }, "Zoom ", Math.round((mapZoom / 19) * 100), "% (L", mapZoom, ")"), mode === "hybrid" && /* @__PURE__ */ React.createElement("div", { className: "opacity-slider" }, /* @__PURE__ */ React.createElement("span", null, "Satellite opacity"), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "range",
@@ -1114,7 +1154,7 @@ function useLiveJurisdiction() {
   useEffect(() => {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("PASTE_")) return;
     setLoading(true);
-    fetch(`${APPS_SCRIPT_URL}?action=getData`).then((r) => r.json()).then((d) => {
+    fetch(`${APPS_SCRIPT_URL}?action=getData&_=${Date.now()}`, { cache: "no-store" }).then((r) => r.json()).then((d) => {
       if (d.ok && d.lines && d.lines.length) {
         // Borrow lineKeys from the local seed by matching line name, since the
         // Sheet doesn't know about map geometry \u2014 only officers/segments.
@@ -1140,6 +1180,20 @@ function LmsdPage() {
     const matching = jurisdictionData.filter((j) => j.segments.some((s) => s.division === selectedDivision));
     return { name: selectedDivision, matching };
   }, [selectedDivision, jurisdictionData]);
+  const lmsdGroups = useMemo(() => {
+    const map = {};
+    jurisdictionData.forEach((line) => {
+      const segTeamAligned = line.segments.length === line.teams.length;
+      const kv = line.line.includes("220") ? "220" : "400";
+      line.segments.forEach((s, i) => {
+        const team = segTeamAligned ? line.teams[i] : null;
+        const officers = team ? team.members : line.teams.flatMap((t) => t.members);
+        if (!map[s.division]) map[s.division] = { kv, rows: [] };
+        map[s.division].rows.push({ line: line.line, chainage: s.chainage, officers });
+      });
+    });
+    return map;
+  }, [jurisdictionData]);
   return React.createElement("div", { className: "page" },
     React.createElement(PageHeader, {
       eyebrow: "Line Maps for 400 kV Karjat",
@@ -1153,7 +1207,6 @@ function LmsdPage() {
         showZones: true,
         jurisdictionData,
         showKm: true,
-        weatherEnabled: true,
         onSelect: (k, type) => type === "zone" && setSelectedDivision(k),
         height: "72vh",
         downloadName: "karjat-lmsd-map"
@@ -1177,25 +1230,120 @@ function LmsdPage() {
             )
       )
     ),
+    React.createElement("div", { className: "lmsd-directory" },
+      React.createElement("h2", { className: "lmsd-directory-heading" }, "LMSD-wise Employee Directory"),
+      React.createElement("div", { className: "lmsd-directory-grid" },
+        Object.entries(lmsdGroups).map(([division, g]) => React.createElement("div", { key: division, className: "lmsd-directory-card", style: { borderColor: divisionColor(division, g.kv) } },
+          React.createElement("div", { className: "lmsd-directory-title" },
+            React.createElement("span", { className: "lmsd-directory-dot", style: { background: divisionColor(division, g.kv) } }),
+            division
+          ),
+          g.rows.map((row, ri) => React.createElement("div", { key: ri, className: "lmsd-directory-row" },
+            React.createElement("div", { className: "lmsd-directory-line" }, row.line, " ", React.createElement("span", { className: "mono muted" }, "(", row.chainage, ")")),
+            row.officers.length === 0
+              ? React.createElement("div", { className: "muted" }, "No officer assigned yet")
+              : row.officers.map((m, mi) => React.createElement("div", { key: mi, className: "officer-line" },
+                  React.createElement(User, { size: 13 }), " ",
+                  React.createElement("span", null, m.name), " ",
+                  React.createElement("span", { className: "muted" }, "\u00b7 ", m.post),
+                  React.createElement("span", { className: "jur-mobile-actions" },
+                    React.createElement("a", { className: "contact-btn", href: `tel:${m.mobile}` }, React.createElement(Phone, { size: 11 }), " Call"),
+                    React.createElement("a", { className: "contact-btn whatsapp", href: `https://wa.me/91${m.mobile}`, target: "_blank", rel: "noreferrer" }, "WhatsApp")
+                  )
+                ))
+          ))
+        ))
+      )
+    ),
     React.createElement(Disclaimer, null)
   );
 }
 function MaintenancePage() {
-  const { lines, loading } = useLiveJurisdiction();
+  const liveEnabled = APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("PASTE_");
+  const [lines, setLines] = useState(JURISDICTION_SEED.map((l) => ({ ...l, teams: l.teams.map((t) => ({ ...t, members: t.members.map((m) => ({ ...m })) })) })));
+  const [loading, setLoading] = useState(false);
+  const [editingLine, setEditingLine] = useState(null);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!liveEnabled) return;
+    setLoading(true);
+    fetch(`${APPS_SCRIPT_URL}?action=getData&_=${Date.now()}`, { cache: "no-store" }).then((r) => r.json()).then((d) => d.ok && setLines(d.lines)).catch(() => {
+    }).finally(() => setLoading(false));
+  }, []);
+  function updateLine(lineName, updater) {
+    setLines((prev) => prev.map((l) => l.line === lineName ? updater(l) : l));
+  }
+  function addTeam(lineName) {
+    updateLine(lineName, (l) => {
+      if (l.teams.length >= 5) return l;
+      return { ...l, teams: [...l.teams, { teamName: `Team ${l.teams.length + 1}`, members: [{ name: "", post: "", mobile: "" }] }] };
+    });
+  }
+  function removeTeam(lineName, idx) {
+    updateLine(lineName, (l) => ({ ...l, teams: l.teams.filter((_, i) => i !== idx) }));
+  }
+  function addMember(lineName, teamIdx) {
+    updateLine(lineName, (l) => ({
+      ...l,
+      teams: l.teams.map((t, i) => i === teamIdx && t.members.length < 5 ? { ...t, members: [...t.members, { name: "", post: "", mobile: "" }] } : t)
+    }));
+  }
+  function removeMember(lineName, teamIdx, mIdx) {
+    updateLine(lineName, (l) => ({
+      ...l,
+      teams: l.teams.map((t, i) => i === teamIdx ? { ...t, members: t.members.filter((_, j) => j !== mIdx) } : t)
+    }));
+  }
+  function updateMember(lineName, teamIdx, mIdx, field, value) {
+    updateLine(lineName, (l) => ({
+      ...l,
+      teams: l.teams.map((t, i) => i === teamIdx ? { ...t, members: t.members.map((m, j) => j === mIdx ? { ...m, [field]: value } : m) } : t)
+    }));
+  }
+  async function save(line) {
+    if (!liveEnabled) {
+      alert("This is running in preview mode (no Apps Script URL configured), so changes stay local to your browser only.");
+      setEditingLine(null);
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "saveTeams", line: line.line, teams: line.teams })
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error);
+      setEditingLine(null);
+    } catch (e) {
+      alert("Could not save: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
   return React.createElement("div", { className: "page" },
     React.createElement(PageHeader, {
       eyebrow: "Line Maintenance Directory",
       title: "Who's responsible, where",
-      subtitle: loading ? "Loading live data from the Sheet\u2026" : "Km length allotted with the LMSD officer(s) for that stretch \u2014 kept live from LMSD Teams Management"
+      subtitle: loading ? "Loading live data from the Sheet\u2026" : liveEnabled ? "Km length allotted with the LMSD officer(s) for that stretch \u2014 connected to your Google Sheet, editable right here" : "Preview mode \u2014 add your Apps Script URL for live editing"
     }),
     React.createElement("div", { className: "table-stack" },
       lines.map((line) => {
+        const editing = editingLine === line.line;
         const segTeamAligned = line.segments.length === line.teams.length;
         const allDivisions = [...new Set(line.segments.map((s) => s.division))];
         return React.createElement("div", { key: line.line, className: "line-card maint-card" },
           React.createElement("div", { className: "line-card-head" },
             React.createElement("div", { className: "line-card-title" }, line.line),
-            React.createElement("div", { className: "line-card-length" }, line.length)
+            React.createElement("div", { className: "line-card-head-right" },
+              React.createElement("div", { className: "line-card-length" }, line.length),
+              !editing
+                ? React.createElement("button", { className: "edit-btn", onClick: () => setEditingLine(line.line) }, "Edit officers")
+                : React.createElement("div", { className: "edit-actions" },
+                    React.createElement("button", { className: "save-btn", disabled: saving, onClick: () => save(line) }, saving ? "Saving\u2026" : "Save"),
+                    React.createElement("button", { className: "cancel-btn", onClick: () => setEditingLine(null) }, "Cancel")
+                  )
+            )
           ),
           React.createElement("div", { className: "maint-layout" },
             React.createElement("table", { className: "mini-table maint-table" },
@@ -1234,8 +1382,28 @@ function MaintenancePage() {
             ),
             allDivisions.length > 1 && React.createElement("div", { className: "multi-lmsd-col" },
               React.createElement("div", { className: "multi-lmsd-title" }, "LMSDs on this line"),
-              allDivisions.map((d, i) => React.createElement("div", { key: i, className: "multi-lmsd-chip", style: { borderColor: divisionColor(d) } }, d))
+              allDivisions.map((d, i) => React.createElement("div", { key: i, className: "multi-lmsd-chip", style: { borderColor: divisionColor(d, line.line.includes("220") ? "220" : "400") } }, d))
             )
+          ),
+          editing && React.createElement("div", { className: "teams-grid editor-teams-grid" },
+            line.teams.map((team, ti) => React.createElement("div", { key: ti, className: "team-card" },
+              React.createElement("div", { className: "team-card-head" },
+                React.createElement("input", {
+                  className: "team-name-input",
+                  value: team.teamName,
+                  onChange: (e) => updateLine(line.line, (l) => ({ ...l, teams: l.teams.map((t, i) => i === ti ? { ...t, teamName: e.target.value } : t) }))
+                }),
+                React.createElement("button", { className: "x-btn", onClick: () => removeTeam(line.line, ti) }, "\xD7")
+              ),
+              team.members.map((m, mi) => React.createElement("div", { className: "member-row", key: mi },
+                React.createElement("input", { placeholder: "Name", value: m.name, onChange: (e) => updateMember(line.line, ti, mi, "name", e.target.value) }),
+                React.createElement("input", { placeholder: "Post", value: m.post, onChange: (e) => updateMember(line.line, ti, mi, "post", e.target.value) }),
+                React.createElement("input", { placeholder: "Mobile", value: m.mobile, onChange: (e) => updateMember(line.line, ti, mi, "mobile", e.target.value) }),
+                team.members.length > 1 && React.createElement("button", { className: "x-btn", onClick: () => removeMember(line.line, ti, mi) }, "\xD7")
+              )),
+              team.members.length < 5 && React.createElement("button", { className: "add-link", onClick: () => addMember(line.line, ti) }, "+ Add person (max 5)")
+            )),
+            line.teams.length < 5 && React.createElement("button", { className: "add-team-btn", onClick: () => addTeam(line.line) }, "+ Add team (max 5)")
           )
         );
       })
@@ -1447,7 +1615,7 @@ function WeatherDetail({ substationKey, weather }) {
   const daily = weather.daily;
   const nowIdx = hourly.time.findIndex((t) => new Date(t) >= /* @__PURE__ */ new Date());
   const next24 = Array.from({ length: 12 }).map((_, i) => nowIdx + i * 2).filter((i) => i < hourly.time.length);
-  return /* @__PURE__ */ React.createElement("div", { className: "weather-detail" }, /* @__PURE__ */ React.createElement("div", { className: "weather-now" }, /* @__PURE__ */ React.createElement(Icon, { name: info.icon, size: 64 }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "temp-now" }, Math.round(weather.current_weather.temperature), "\xB0C"), /* @__PURE__ */ React.createElement("div", { className: "cond-now" }, info.label), /* @__PURE__ */ React.createElement("div", { className: "loc-now" }, SUBSTATIONS[substationKey].name))), /* @__PURE__ */ React.createElement("div", { className: "hourly-strip" }, next24.map((i) => /* @__PURE__ */ React.createElement("div", { className: "hour-chip", key: i }, /* @__PURE__ */ React.createElement("div", { className: "hour-time" }, new Date(hourly.time[i]).getHours(), ":00"), /* @__PURE__ */ React.createElement(Icon, { name: wmoInfo(hourly.weathercode[i]).icon, size: 20 }), /* @__PURE__ */ React.createElement("div", { className: "hour-temp" }, Math.round(hourly.temperature_2m[i]), "\xB0"), /* @__PURE__ */ React.createElement("div", { className: "hour-pop" }, hourly.precipitation_probability[i], "%")))), /* @__PURE__ */ React.createElement("div", { className: "daily-grid" }, daily.time.map((t, i) => /* @__PURE__ */ React.createElement("div", { className: "day-chip", key: t }, /* @__PURE__ */ React.createElement("div", { className: "day-name" }, i === 0 ? "Today" : new Date(t).toLocaleDateString(void 0, { weekday: "short" })), /* @__PURE__ */ React.createElement(Icon, { name: wmoInfo(daily.weathercode[i]).icon, size: 22 }), /* @__PURE__ */ React.createElement("div", { className: "day-temp" }, Math.round(daily.temperature_2m_max[i]), "\xB0 / ", Math.round(daily.temperature_2m_min[i]), "\xB0"), /* @__PURE__ */ React.createElement("div", { className: "day-pop" }, daily.precipitation_probability_max[i], "%")))));
+  return /* @__PURE__ */ React.createElement("div", { className: "weather-detail" }, /* @__PURE__ */ React.createElement("div", { className: "weather-now" }, /* @__PURE__ */ React.createElement(Icon, { name: info.icon, size: 64 }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "temp-now" }, Math.round(weather.current_weather.temperature), "\xB0C"), /* @__PURE__ */ React.createElement("div", { className: "cond-now" }, info.label), /* @__PURE__ */ React.createElement("div", { className: "loc-now" }, SUBSTATIONS[substationKey].name))), /* @__PURE__ */ React.createElement("div", { className: "hourly-strip" }, next24.map((i) => /* @__PURE__ */ React.createElement("div", { className: "hour-chip", key: i }, /* @__PURE__ */ React.createElement("div", { className: "hour-time" }, new Date(hourly.time[i]).getHours(), ":00"), /* @__PURE__ */ React.createElement(Icon, { name: wmoInfo(hourly.weathercode[i]).icon, size: 20 }), /* @__PURE__ */ React.createElement("div", { className: "hour-temp" }, Math.round(hourly.temperature_2m[i]), "\xB0"), /* @__PURE__ */ React.createElement("div", { className: "hour-pop" }, hourly.precipitation_probability[i], "%")))), /* @__PURE__ */ React.createElement("div", { className: "daily-grid" }, daily.time.map((t, i) => /* @__PURE__ */ React.createElement("div", { className: "day-chip", key: t }, /* @__PURE__ */ React.createElement("div", { className: "day-name" }, (i === 0 ? "Today \xB7 " : "") + new Date(t).toLocaleDateString(void 0, { weekday: "short", day: "numeric", month: "short" })), /* @__PURE__ */ React.createElement(Icon, { name: wmoInfo(daily.weathercode[i]).icon, size: 22 }), /* @__PURE__ */ React.createElement("div", { className: "day-temp" }, Math.round(daily.temperature_2m_max[i]), "\xB0 / ", Math.round(daily.temperature_2m_min[i]), "\xB0"), /* @__PURE__ */ React.createElement("div", { className: "day-pop" }, daily.precipitation_probability_max[i], "%")))));
 }
 function Icon({ name, size }) {
   const symbol = {
@@ -1472,89 +1640,6 @@ function SunFX() {
 }
 function CloudFX() {
   return /* @__PURE__ */ React.createElement("div", { className: "fx-cloud" }, /* @__PURE__ */ React.createElement("div", { className: "cloud c1" }), /* @__PURE__ */ React.createElement("div", { className: "cloud c2" }), /* @__PURE__ */ React.createElement("div", { className: "cloud c3" }));
-}
-function TeamsPage() {
-  const [lines, setLines] = useState(JURISDICTION_SEED.map((l) => ({ ...l, teams: l.teams.map((t) => ({ ...t })) })));
-  const [editingLine, setEditingLine] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const liveEnabled = APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("PASTE_");
-  useEffect(() => {
-    if (!liveEnabled) return;
-    fetch(`${APPS_SCRIPT_URL}?action=getData`).then((r) => r.json()).then((d) => d.ok && setLines(d.lines)).catch(() => {
-    });
-  }, []);
-  function updateLine(lineName, updater) {
-    setLines((prev) => prev.map((l) => l.line === lineName ? updater(l) : l));
-  }
-  function addTeam(lineName) {
-    updateLine(lineName, (l) => {
-      if (l.teams.length >= 5) return l;
-      return { ...l, teams: [...l.teams, { teamName: `Team ${l.teams.length + 1}`, members: [{ name: "", post: "", mobile: "" }] }] };
-    });
-  }
-  function removeTeam(lineName, idx) {
-    updateLine(lineName, (l) => ({ ...l, teams: l.teams.filter((_, i) => i !== idx) }));
-  }
-  function addMember(lineName, teamIdx) {
-    updateLine(lineName, (l) => ({
-      ...l,
-      teams: l.teams.map((t, i) => i === teamIdx && t.members.length < 5 ? { ...t, members: [...t.members, { name: "", post: "", mobile: "" }] } : t)
-    }));
-  }
-  function removeMember(lineName, teamIdx, mIdx) {
-    updateLine(lineName, (l) => ({
-      ...l,
-      teams: l.teams.map((t, i) => i === teamIdx ? { ...t, members: t.members.filter((_, j) => j !== mIdx) } : t)
-    }));
-  }
-  function updateMember(lineName, teamIdx, mIdx, field, value) {
-    updateLine(lineName, (l) => ({
-      ...l,
-      teams: l.teams.map(
-        (t, i) => i === teamIdx ? { ...t, members: t.members.map((m, j) => j === mIdx ? { ...m, [field]: value } : m) } : t
-      )
-    }));
-  }
-  async function save(line) {
-    if (!liveEnabled) {
-      alert("This is running in preview mode (no Apps Script URL configured in data.js), so changes stay local to your browser only.");
-      setEditingLine(null);
-      return;
-    }
-    setSaving(true);
-    try {
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: "saveTeams", line: line.line, teams: line.teams })
-      });
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error);
-      setEditingLine(null);
-    } catch (e) {
-      alert("Could not save: " + e.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement(
-    PageHeader,
-    {
-      eyebrow: "Page 7 \xB7 Google Sheet-backed",
-      title: "LMSD Team Management",
-      subtitle: liveEnabled ? "Connected to your Google Sheet" : "Preview mode \u2014 add your Apps Script URL in data.js for live editing"
-    }
-  ), /* @__PURE__ */ React.createElement("div", { className: "table-stack" }, lines.map((line) => {
-    const editing = editingLine === line.line;
-    return /* @__PURE__ */ React.createElement("div", { key: line.line, className: "line-card" }, /* @__PURE__ */ React.createElement("div", { className: "line-card-head" }, /* @__PURE__ */ React.createElement("div", { className: "line-card-title" }, line.line), !editing ? /* @__PURE__ */ React.createElement("button", { className: "edit-btn", onClick: () => setEditingLine(line.line) }, "Edit") : /* @__PURE__ */ React.createElement("div", { className: "edit-actions" }, /* @__PURE__ */ React.createElement("button", { className: "save-btn", disabled: saving, onClick: () => save(line) }, saving ? "Saving\u2026" : "Save"), /* @__PURE__ */ React.createElement("button", { className: "cancel-btn", onClick: () => setEditingLine(null) }, "Cancel"))), /* @__PURE__ */ React.createElement("div", { className: "teams-grid" }, line.teams.map((team, ti) => /* @__PURE__ */ React.createElement("div", { key: ti, className: "team-card" }, /* @__PURE__ */ React.createElement("div", { className: "team-card-head" }, /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        className: "team-name-input",
-        value: team.teamName,
-        disabled: !editing,
-        onChange: (e) => updateLine(line.line, (l) => ({ ...l, teams: l.teams.map((t, i) => i === ti ? { ...t, teamName: e.target.value } : t) }))
-      }
-    ), editing && /* @__PURE__ */ React.createElement("button", { className: "x-btn", onClick: () => removeTeam(line.line, ti) }, "\xD7")), team.members.map((m, mi) => /* @__PURE__ */ React.createElement("div", { className: "member-row", key: mi }, /* @__PURE__ */ React.createElement("input", { placeholder: "Name", value: m.name, disabled: !editing, onChange: (e) => updateMember(line.line, ti, mi, "name", e.target.value) }), /* @__PURE__ */ React.createElement("input", { placeholder: "Post", value: m.post, disabled: !editing, onChange: (e) => updateMember(line.line, ti, mi, "post", e.target.value) }), /* @__PURE__ */ React.createElement("input", { placeholder: "Mobile", value: m.mobile, disabled: !editing, onChange: (e) => updateMember(line.line, ti, mi, "mobile", e.target.value) }), editing && team.members.length > 1 && /* @__PURE__ */ React.createElement("button", { className: "x-btn", onClick: () => removeMember(line.line, ti, mi) }, "\xD7"))), editing && team.members.length < 5 && /* @__PURE__ */ React.createElement("button", { className: "add-link", onClick: () => addMember(line.line, ti) }, "+ Add person (max 5)"))), editing && line.teams.length < 5 && /* @__PURE__ */ React.createElement("button", { className: "add-team-btn", onClick: () => addTeam(line.line) }, "+ Add team (max 5)")));
-  })));
 }
 function PageHeader({ eyebrow, title, subtitle, light }) {
   return /* @__PURE__ */ React.createElement("header", { className: `page-header ${light ? "light" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "eyebrow" }, eyebrow), /* @__PURE__ */ React.createElement("h1", null, title), subtitle && /* @__PURE__ */ React.createElement("p", null, subtitle));
@@ -1937,6 +2022,7 @@ function EditorPage() {
         onClick: () => setShowTowerNumbers(!showTowerNumbers),
         title: "Tower numbers show once you zoom in close"
       }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"),
+      React.createElement("div", { className: "zoom-readout", title: "Map zoom level" }, "Zoom ", Math.round((mapZoom / 19) * 100), "% (L", mapZoom, ")"),
       mode === "hybrid" && React.createElement("div", { className: "opacity-slider" },
         React.createElement("span", null, "Satellite opacity"),
         React.createElement("input", { type: "range", min: "0", max: "100", value: hybridOpacity, onChange: (e) => setHybridOpacity(Number(e.target.value)) }),
@@ -2056,7 +2142,6 @@ const ROUTES = {
   "statewide": { label: "Statewide", comp: StatewidePage },
   "printmaps": { label: "Print Maps", comp: PrintMapsPage },
   "weather": { label: "Weather", comp: WeatherPage },
-  "teams": { label: "LMSD Teams", comp: TeamsPage },
   "editor": { label: "Line Editor", comp: EditorPage }
 };
 function App() {
