@@ -37,7 +37,7 @@ const SHEET_NAME = "Karjat_LMSD_Database";
 // ---- Seed data: exactly what you gave me, used to auto-populate on init ----
 const SEED_LINES = [
   {
-    line: "400 kV Karjat - Girawali Ckt I & II",
+    line: "400 kV Karjat - Girawali Line 1 & 2",
     length: "214.6 km",
     segments: [
       { chainage: "0-37 km", division: "LMSD Lonikand" },
@@ -51,7 +51,7 @@ const SEED_LINES = [
     ],
   },
   {
-    line: "400 kV Karjat - Lonikand I & II",
+    line: "400 kV Karjat - Lonikand Line 1 & 2",
     length: "85.4 km",
     segments: [{ chainage: "0-85.4 km", division: "LMSD Lonikand" }],
     teams: [
@@ -59,13 +59,13 @@ const SEED_LINES = [
     ],
   },
   {
-    line: "400/765 kV Karjat - Pune East (planned)",
+    line: "400/765 kV Karjat - Pune East Line 1 (planned)",
     length: "~50 km D/C",
     segments: [{ chainage: "0-50 km", division: "POWERGRID (to be assigned)" }],
     teams: [],
   },
   {
-    line: "220 kV Ahilyanagar",
+    line: "220 kV Karjat - Ahilyanagar Line 1",
     length: "79.6 km",
     segments: [{ chainage: "0-79.6 km", division: "LMSD Kedgaon" }],
     teams: [
@@ -79,7 +79,7 @@ const SEED_LINES = [
     ],
   },
   {
-    line: "220 kV Bhose / Belwandi",
+    line: "220 kV Karjat - Belwandi Line 1",
     length: "40.7 km",
     segments: [{ chainage: "0-40.7 km", division: "LMSD Kedgaon" }],
     teams: [
@@ -93,25 +93,25 @@ const SEED_LINES = [
     ],
   },
   {
-    line: "220 kV Bhigwan",
+    line: "220 kV Karjat - Bhigwan Line 1",
     length: "19.84 km",
     segments: [{ chainage: "0-19.84 km", division: "LMSD Baramati" }],
     teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
   },
   {
-    line: "220 kV Shirsuphal",
+    line: "220 kV Karjat - Shirsuphal Line 1",
     length: "19.84 km",
     segments: [{ chainage: "0-19.84 km", division: "LMSD Baramati" }],
     teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
   },
   {
-    line: "220 kV Jeur-I",
+    line: "220 kV Karjat - Jeur Line 1",
     length: "50.69 km",
     segments: [{ chainage: "0-50.69 km", division: "LMSD Baramati" }],
     teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
   },
   {
-    line: "220 kV Jeur-II",
+    line: "220 kV Karjat - Jeur Line 2",
     length: "50.69 km",
     segments: [{ chainage: "0-50.69 km", division: "LMSD Baramati" }],
     teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
