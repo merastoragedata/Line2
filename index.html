@@ -64,6 +64,7 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .gridmap-wrap { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
 .gridmap-canvas { width: 100%; height: 100%; background: #0c1117; }
 .map-controls { position: absolute; top: 12px; left: 12px; z-index: 500; display: flex; flex-direction: column; gap: 8px; }
+.map-controls-right { position: absolute; top: 12px; right: 12px; z-index: 500; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .layer-switch { display: flex; background: rgba(12,17,23,0.85); backdrop-filter: blur(6px); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
 .layer-switch button { border: none; background: transparent; color: var(--ink-muted); padding: 8px 14px; font-size: 12.5px; font-family: "JetBrains Mono"; }
 .layer-switch button.active { background: var(--cyan); color: #06201d; font-weight: 600; }
@@ -172,10 +173,22 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .weather-page.mood-snow { background: linear-gradient(180deg,#7f97b0 0%, #dfe9f2 100%); }
 .weather-bg-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .weather-content { position: relative; z-index: 2; }
+.weather-photo-layer { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 1s ease; z-index: 0; }
+.weather-photo-layer.on { opacity: 0.55; }
+.weather-photo-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,12,18,0.35) 0%, rgba(8,12,18,0.12) 35%, rgba(8,12,18,0.6) 100%); z-index: 1; pointer-events: none; }
 
-.weather-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0; }
+.weather-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0; align-items: center; }
 .wtab { background: rgba(0,0,0,0.25); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 7px 14px; font-size: 12.5px; font-family: "JetBrains Mono"; }
 .wtab.active { background: #fff; color: #111; font-weight: 700; }
+.weather-bg-toggle { margin-left: auto; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 999px; padding: 7px 14px; font-size: 11.5px; font-family: "JetBrains Mono"; display: inline-flex; align-items: center; gap: 6px; }
+.weather-bg-panel { position: relative; z-index: 2; background: rgba(10,14,20,0.78); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 12px 14px 14px; margin: -6px 0 18px; }
+.weather-bg-panel-head { display: flex; justify-content: space-between; align-items: baseline; color: #fff; font-family: "JetBrains Mono"; font-size: 11.5px; }
+.weather-bg-panel-head .hint { color: rgba(255,255,255,0.6); font-size: 10.5px; }
+.weather-bg-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.weather-bg-thumb { position: relative; width: 66px; height: 66px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.25); }
+.weather-bg-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.weather-bg-thumb .thumb-x { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.65); color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
+.weather-bg-add { width: 66px; height: 66px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.45); background: transparent; color: #fff; font-size: 22px; display: flex; align-items: center; justify-content: center; }
 
 .weather-detail { background: rgba(10,14,20,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius); padding: 20px; color: #fff; }
 .weather-now { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
@@ -267,7 +280,10 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 
 /* ---------------- Print Maps ---------------- */
 .print-page-wrap { display: flex; flex-direction: column; gap: 14px; align-items: center; }
-.print-toolbar { display: flex; gap: 10px; align-items: center; }
+.print-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.print-map-toolbar { position: absolute; top: 8px; right: 8px; z-index: 50; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; background: rgba(255,255,255,0.92); padding: 6px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+.print-map-toolbar .download-btn, .print-map-toolbar .layer-switch { font-size: 10.5px; }
+.print-map-toolbar .download-btn { position: static; bottom: auto; right: auto; padding: 5px 9px; box-shadow: none; }
 .print-sheet { background: #fff; color: #111; border-radius: 4px; box-shadow: 0 4px 24px rgba(0,0,0,0.35); padding: 14mm; box-sizing: border-box; }
 .print-sheet.orient-portrait { width: 210mm; min-height: 297mm; }
 .print-sheet.orient-landscape { width: 297mm; min-height: 210mm; }
@@ -275,7 +291,7 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .print-sheet-title { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 19px; color: #111; }
 .print-sheet-subtitle { font-size: 11.5px; color: #555; margin-top: 2px; }
 .print-sheet-brand { font-family: "JetBrains Mono", monospace; font-size: 10px; color: #777; white-space: nowrap; padding-top: 3px; }
-.print-map-frame { border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+.print-map-frame { position: relative; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
 .print-map-frame .map-controls { display: none; }
 .schematic-svg { width: 100%; height: auto; display: block; background: #fff; }
 .schematic-note { font-size: 11.5px; color: var(--ink-muted); background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; }
@@ -653,6 +669,10 @@ const JURISDICTION_SEED = [
 const SUBSTATIONS = {};
 Object.entries(DEFAULT_SUBSTATIONS).forEach(([k, v]) => { SUBSTATIONS[k] = { ...v }; });
 const LINES = DEFAULT_LINES.map((l) => ({ ...l, path: l.path.map((p) => [p[0], p[1]]) }));
+// The editable "400 kV Karjat region" boundary \u2014 a single closed polygon
+// used to frame the SVG/PDF diagrams and (optionally) shown as a thin
+// boundary line on the regular maps. Empty until drawn in the Editor.
+let REGION = [];
 
 const GEO_STORAGE_KEY = "karjatGeoOverrides_v1";
 function loadGeoLocal() {
@@ -664,8 +684,9 @@ function loadGeoLocal() {
 function saveGeoLocal(geo) {
   try { localStorage.setItem(GEO_STORAGE_KEY, JSON.stringify(geo)); } catch (e) {}
 }
-// Merges an edited {subs, lines} object into the shared SUBSTATIONS/LINES so
-// every already-defined page picks it up next time it renders/mounts.
+// Merges an edited {subs, lines, region} object into the shared
+// SUBSTATIONS/LINES/REGION so every already-defined page picks it up next
+// time it renders/mounts.
 function applyGeoOverrides(geo) {
   if (!geo || !geo.subs || !geo.lines) return;
   // Merge-safe: apply saved edits ON TOP of whatever substations/lines
@@ -684,6 +705,7 @@ function applyGeoOverrides(geo) {
   geo.lines.forEach((l) => {
     if (!LINES.find((x) => x.key === l.key)) LINES.push({ ...l, path: l.path.map((p) => [p[0], p[1]]) });
   });
+  if (Array.isArray(geo.region)) REGION = geo.region.map((p) => [p[0], p[1]]);
 }
 (function hydrateGeoOnBoot() {
   const stored = loadGeoLocal();
@@ -1052,6 +1074,16 @@ function GridMap({
         poly.on("click", () => onSelect(c.division, "zone"));
       });
     }
+    if (REGION.length >= 3) {
+      L.polygon([...REGION, REGION[0]], {
+        color: "#c9902f",
+        weight: 1.6,
+        dashArray: "9 6",
+        fill: false,
+        opacity: 0.75,
+        interactive: false
+      }).addTo(group).bindTooltip("400 kV Karjat region boundary", { sticky: true });
+    }
     if (showGraticule) {
       const b = map.getBounds();
       const step = mapZoom >= 10 ? 0.25 : mapZoom >= 7 ? 0.5 : 1;
@@ -1103,7 +1135,7 @@ function GridMap({
           interactive: false
         }).addTo(group);
       }
-      if (showTowerNumbers && emphasized && mapZoom >= 13 && line.path.length > 2) {
+      if (showTowerNumbers && emphasized && (mapZoom / 19 * 100) >= 60 && line.path.length > 2) {
         line.path.forEach((pt, idx) => {
           const label = computeTowerLabel(line, idx);
           if (!label) return;
@@ -1208,7 +1240,7 @@ function GridMap({
       value: hybridOpacity,
       onChange: (e) => setHybridOpacity(Number(e.target.value))
     }
-  ), /* @__PURE__ */ React.createElement("span", null, hybridOpacity, "%"))), /* @__PURE__ */ React.createElement("button", { className: "download-btn", onClick: handleDownload, disabled: downloading }, downloading ? "Preparing\u2026" : "\u2B07 Download view (PDF)"));
+  ), /* @__PURE__ */ React.createElement("span", null, hybridOpacity, "%"))), /* @__PURE__ */ React.createElement("div", { className: "map-controls-right" }, /* @__PURE__ */ React.createElement("button", { className: "download-btn", onClick: handleDownload, disabled: downloading }, downloading ? "Preparing\u2026" : "\u2B07 Download (PDF)")));
 }
 function User({ size = 14 }) {
   return /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", style: { display: "inline", verticalAlign: "-2px" } }, /* @__PURE__ */ React.createElement("path", { d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" }), /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "7", r: "4" }));
@@ -1758,6 +1790,10 @@ function buildSchematicData(scope) {
   if (scope.subKeys) scope.subKeys.forEach((k) => subKeysUsed.add(k));
   const subs = [...subKeysUsed].filter((k) => SUBSTATIONS[k] && !SUBSTATIONS[k].hidden).map((k) => ({ key: k, ...SUBSTATIONS[k] }));
   const allPoints = [];
+  // If a 400 kV Karjat region boundary has been drawn, frame the diagram to
+  // that boundary instead of just whatever substations happen to be in
+  // scope \u2014 this keeps every diagram consistently cropped to "the region".
+  if (REGION.length >= 3) REGION.forEach((p) => allPoints.push(p));
   subs.forEach((s) => allPoints.push([s.lat, s.lon]));
   lines.forEach((l) => l.path.forEach((p) => allPoints.push(p)));
   if (!allPoints.length) return null;
@@ -1769,7 +1805,8 @@ function buildSchematicData(scope) {
     pad + (lon - minLon) / lonSpan * (W - 2 * pad),
     H - pad - (lat - minLat) / latSpan * (H - 2 * pad)
   ];
-  return { subs, lines, project, W, H };
+  const region = REGION.length >= 3 ? REGION.map(project) : null;
+  return { subs, lines, project, W, H, region };
 }
 function SchematicDiagram({ scope }) {
   const data = useMemo(() => buildSchematicData(scope), [scope]);
@@ -1777,6 +1814,14 @@ function SchematicDiagram({ scope }) {
   const shortName = (n) => n.replace(/^\d+(\/\d+)? kV /, "").replace(" SS", "");
   return React.createElement("svg", { viewBox: `0 0 ${data.W} ${data.H}`, className: "schematic-svg", xmlns: "http://www.w3.org/2000/svg" },
     React.createElement("rect", { x: 0, y: 0, width: data.W, height: data.H, fill: "#ffffff" }),
+    data.region && React.createElement("polygon", {
+      points: data.region.map((p) => p.join(",")).join(" "),
+      fill: "none",
+      stroke: "#c9902f",
+      strokeWidth: 1.4,
+      strokeDasharray: "9 6",
+      opacity: 0.8
+    }),
     data.lines.map((l) => {
       const emphasized = !scope.emphasize || scope.emphasize.includes(l.key);
       const color = l.color || KV_COLOR[l.kv] || "#999";
@@ -1855,14 +1900,6 @@ function PrintMapPage({ scopeKey }) {
     URL.revokeObjectURL(url);
   };
   return React.createElement("div", { className: "print-page-wrap" },
-    React.createElement("div", { className: "print-toolbar no-print" },
-      React.createElement("div", { className: "layer-switch" },
-        ["portrait", "landscape"].map((o) => React.createElement("button", { key: o, className: orientation === o ? "active" : "", onClick: () => setOrientation(o) }, o === "portrait" ? "Portrait" : "Landscape"))
-      ),
-      React.createElement("button", { className: "download-btn", onClick: handlePrint }, "\ud83d\uddb6 Print"),
-      React.createElement("button", { className: "download-btn", onClick: handleDownloadSvg }, "\u2B07 Download SVG"),
-      React.createElement("button", { className: "download-btn", onClick: handleDownloadPdf, disabled: downloading }, downloading ? "Preparing\u2026" : "\u2B07 Download PDF")
-    ),
     React.createElement("div", { ref: sheetRef, className: `print-sheet orient-${orientation}` },
       React.createElement("div", { className: "print-sheet-head" },
         React.createElement("div", null,
@@ -1873,6 +1910,14 @@ function PrintMapPage({ scopeKey }) {
       ),
       React.createElement("div", { className: "schematic-note no-print" }, "Schematic diagram \u2014 built from the real line shapes and substation positions, but ", React.createElement("strong", null, "not drawn to scale"), ". For understanding the network pattern, not for surveying."),
       React.createElement("div", { className: "print-map-frame" },
+        React.createElement("div", { className: "print-map-toolbar no-print" },
+          React.createElement("div", { className: "layer-switch" },
+            ["portrait", "landscape"].map((o) => React.createElement("button", { key: o, className: orientation === o ? "active" : "", onClick: () => setOrientation(o) }, o === "portrait" ? "Portrait" : "Landscape"))
+          ),
+          React.createElement("button", { className: "download-btn", onClick: handlePrint }, "\ud83d\uddb6 Print"),
+          React.createElement("button", { className: "download-btn", onClick: handleDownloadSvg }, "\u2B07 SVG"),
+          React.createElement("button", { className: "download-btn", onClick: handleDownloadPdf, disabled: downloading }, downloading ? "Preparing\u2026" : "\u2B07 PDF")
+        ),
         React.createElement(SchematicDiagram, { scope })
       ),
       React.createElement("div", { className: "print-lmsd-section" },
@@ -1930,25 +1975,147 @@ function PrintMapsPage() {
     React.createElement(PrintMapPage, { key: tab, scopeKey: tab })
   );
 }
+// ---- Per-substation weather background photos (user-uploaded, stored locally) ----
+const WEATHER_BG_STORAGE_KEY = "karjatWeatherBgOverrides_v1";
+function loadWeatherBgStore() {
+  try {
+    const raw = localStorage.getItem(WEATHER_BG_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+function saveWeatherBgStore(store) {
+  try { localStorage.setItem(WEATHER_BG_STORAGE_KEY, JSON.stringify(store)); return true; }
+  catch (e) { return false; }
+}
+// Downscales + JPEG-compresses an uploaded photo client-side before it goes into
+// localStorage, so a handful of phone photos per substation don't blow the quota.
+function readImageCompressed(file, maxDim = 1600, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    if (!file.type || !file.type.startsWith("image/")) { reject(new Error(file.name + " isn't an image file")); return; }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read " + file.name));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error(file.name + " isn't a readable image"));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const scale = maxDim / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function WeatherPage() {
   const [active, setActive] = useState("karjat");
   const [data, setData] = useState({});
+  const [bgStore, setBgStore] = useState(() => loadWeatherBgStore());
+  const [bgIndex, setBgIndex] = useState(0);
+  const [managerOpen, setManagerOpen] = useState(false);
+  const [bgBusy, setBgBusy] = useState(false);
+
   useEffect(() => {
     const pts = WEATHER_TABS.map((k) => ({ key: k, lat: SUBSTATIONS[k].lat, lon: SUBSTATIONS[k].lon }));
     fetchWeatherBatch(pts).then(setData).catch(console.error);
   }, []);
+
+  // Pick a fresh random photo for this substation on mount and every time the
+  // active substation changes \u2014 i.e. "rotates on each load".
+  useEffect(() => {
+    const imgs = bgStore[active] || [];
+    setBgIndex(imgs.length ? Math.floor(Math.random() * imgs.length) : 0);
+    // eslint-disable-next-line
+  }, [active]);
+
   const current = data[active];
   const mood = current ? wmoInfo(current.current_weather.weathercode).mood : "cloudy";
-  return /* @__PURE__ */ React.createElement("div", { className: `page weather-page mood-${mood}` }, /* @__PURE__ */ React.createElement("div", { className: "weather-bg-layer" }, mood === "rain" || mood === "storm" ? /* @__PURE__ */ React.createElement(RainFX, null) : null, mood === "sunny" ? /* @__PURE__ */ React.createElement(SunFX, null) : null, mood === "cloudy" ? /* @__PURE__ */ React.createElement(CloudFX, null) : null), /* @__PURE__ */ React.createElement("div", { className: "weather-content" }, /* @__PURE__ */ React.createElement(PageHeader, { eyebrow: "Page 6", title: "Weather Across the Grid", subtitle: "Current, hourly and 16-day outlook per substation", light: true }), /* @__PURE__ */ React.createElement("div", { className: "weather-tabs" }, WEATHER_TABS.map((k) => /* @__PURE__ */ React.createElement("button", { key: k, className: active === k ? "wtab active" : "wtab", onClick: () => setActive(k) }, SUBSTATIONS[k].name.replace("400 kV ", "").replace("220 kV ", "").replace(" SS", "")))), !current ? /* @__PURE__ */ React.createElement("div", { className: "empty-hint light" }, "Loading forecast\\u2026") : /* @__PURE__ */ React.createElement(WeatherDetail, { substationKey: active, weather: current }), /* @__PURE__ */ React.createElement("h3", { className: "all-lines-heading" }, "All substations \u2014 live conditions"), /* @__PURE__ */ React.createElement(
-    GridMap,
-    {
-      substationKeys: KARJAT_SUBSTATION_KEYS,
-      lineKeys: KARJAT_LINE_KEYS,
-      weatherEnabled: true,
-      height: "55vh",
-      downloadName: "weather-network-map"
+  const bgImages = bgStore[active] || [];
+  const bgPhoto = bgImages[bgIndex] || null;
+
+  async function handleBgUpload(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+    setBgBusy(true);
+    try {
+      const compressed = await Promise.all(files.map((f) => readImageCompressed(f)));
+      const priorCount = (bgStore[active] || []).length;
+      const next = { ...bgStore, [active]: [...(bgStore[active] || []), ...compressed] };
+      const ok = saveWeatherBgStore(next);
+      if (!ok) {
+        await showAlert("Couldn\u2019t save that photo \u2014 this device\u2019s local storage is full. Remove a few existing photos first, then try again.");
+        return;
+      }
+      setBgStore(next);
+      setBgIndex(priorCount);
+    } catch (err) {
+      await showAlert("Could not add that photo: " + err.message);
+    } finally {
+      setBgBusy(false);
     }
-  )));
+  }
+
+  async function removeBgPhoto(idx) {
+    if (!await askConfirm("Remove this photo?")) return;
+    const imgs = [...(bgStore[active] || [])];
+    imgs.splice(idx, 1);
+    const next = { ...bgStore, [active]: imgs };
+    saveWeatherBgStore(next);
+    setBgStore(next);
+    setBgIndex(0);
+  }
+
+  return /* @__PURE__ */ React.createElement("div", { className: `page weather-page mood-${mood}` },
+    /* @__PURE__ */ React.createElement("div", { className: "weather-photo-layer" + (bgPhoto ? " on" : ""), style: bgPhoto ? { backgroundImage: `url(${bgPhoto})` } : void 0 }),
+    bgPhoto ? /* @__PURE__ */ React.createElement("div", { className: "weather-photo-scrim" }) : null,
+    /* @__PURE__ */ React.createElement("div", { className: "weather-bg-layer" }, mood === "rain" || mood === "storm" ? /* @__PURE__ */ React.createElement(RainFX, null) : null, mood === "sunny" ? /* @__PURE__ */ React.createElement(SunFX, null) : null, mood === "cloudy" ? /* @__PURE__ */ React.createElement(CloudFX, null) : null),
+    /* @__PURE__ */ React.createElement("div", { className: "weather-content" },
+      /* @__PURE__ */ React.createElement(PageHeader, { eyebrow: "Page 6", title: "Weather Across the Grid", subtitle: "Current, hourly and 16-day outlook per substation", light: true }),
+      /* @__PURE__ */ React.createElement("div", { className: "weather-tabs" },
+        WEATHER_TABS.map((k) => /* @__PURE__ */ React.createElement("button", { key: k, className: active === k ? "wtab active" : "wtab", onClick: () => setActive(k) }, SUBSTATIONS[k].name.replace("400 kV ", "").replace("220 kV ", "").replace(" SS", ""))),
+        /* @__PURE__ */ React.createElement("button", { className: "weather-bg-toggle no-print", onClick: () => setManagerOpen((v) => !v) },
+          "\ud83d\uddbc\ufe0f ", bgImages.length ? `${bgImages.length} photo${bgImages.length > 1 ? "s" : ""}` : "Add photos", managerOpen ? " \u25b4" : " \u25be"
+        )
+      ),
+      managerOpen ? /* @__PURE__ */ React.createElement("div", { className: "weather-bg-panel no-print" },
+        /* @__PURE__ */ React.createElement("div", { className: "weather-bg-panel-head" },
+          /* @__PURE__ */ React.createElement("span", null, "Background photos \u2014 ", SUBSTATIONS[active].name),
+          /* @__PURE__ */ React.createElement("span", { className: "hint" }, "stored on this device \u00b7 one shown at random each visit")
+        ),
+        /* @__PURE__ */ React.createElement("div", { className: "weather-bg-thumbs" },
+          bgImages.map((src, i) => /* @__PURE__ */ React.createElement("div", { className: "weather-bg-thumb", key: i },
+            /* @__PURE__ */ React.createElement("img", { src, alt: "" }),
+            /* @__PURE__ */ React.createElement("button", { className: "thumb-x", onClick: () => removeBgPhoto(i), title: "Remove" }, "\u00d7")
+          )),
+          /* @__PURE__ */ React.createElement("label", { className: "weather-bg-add", title: "Add photos" },
+            bgBusy ? "\u2026" : "+",
+            /* @__PURE__ */ React.createElement("input", { type: "file", accept: "image/*", multiple: true, style: { display: "none" }, onChange: handleBgUpload, disabled: bgBusy })
+          )
+        )
+      ) : null,
+      !current ? /* @__PURE__ */ React.createElement("div", { className: "empty-hint light" }, "Loading forecast\u2026") : /* @__PURE__ */ React.createElement(WeatherDetail, { substationKey: active, weather: current }),
+      /* @__PURE__ */ React.createElement("h3", { className: "all-lines-heading" }, "All substations \u2014 live conditions"),
+      /* @__PURE__ */ React.createElement(
+        GridMap,
+        {
+          substationKeys: KARJAT_SUBSTATION_KEYS,
+          lineKeys: KARJAT_LINE_KEYS,
+          weatherEnabled: true,
+          height: "55vh",
+          downloadName: "weather-network-map"
+        }
+      )
+    )
+  );
 }
 function WeatherDetail({ substationKey, weather }) {
   const info = wmoInfo(weather.current_weather.weathercode);
@@ -1989,7 +2156,8 @@ function cloneGeo() {
   const subs = {};
   Object.entries(SUBSTATIONS).forEach(([k, v]) => { subs[k] = { ...v }; });
   const lines = LINES.map((l) => ({ ...l, path: l.path.map((p) => [p[0], p[1]] ) }));
-  return { subs, lines };
+  const region = REGION.map((p) => [p[0], p[1]]);
+  return { subs, lines, region };
 }
 
 function findNearestInsertIndex(path, latlng) {
@@ -2037,6 +2205,8 @@ function EditorPage() {
   const [pointMode, setPointMode] = useState("idle"); // idle | addPoint | drawNew | placeSub
   const [newLineDraft, setNewLineDraft] = useState(null); // { from, to, kv, circuits, status, color, path }
   const [newSubDraft, setNewSubDraft] = useState(null); // { name, kv, group }
+  const [regionEditOn, setRegionEditOn] = useState(false);
+  const [drawingRegion, setDrawingRegion] = useState(false);
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
   const [mode, setMode] = useState("normal");
@@ -2053,6 +2223,7 @@ function EditorPage() {
   const subsLayerRef = useRef(null);
   const vertexLayerRef = useRef(null);
   const draftLayerRef = useRef(null);
+  const regionLayerRef = useRef(null);
   const geoRef = useRef(geo);
   const pointModeRef = useRef(pointMode);
   const selectedLineRef = useRef(selectedLine);
@@ -2108,6 +2279,7 @@ function EditorPage() {
     subsLayerRef.current = L.layerGroup().addTo(map);
     vertexLayerRef.current = L.layerGroup().addTo(map);
     draftLayerRef.current = L.layerGroup().addTo(map);
+    regionLayerRef.current = L.layerGroup().addTo(map);
 
     map.on("click", (e) => {
       const pm = pointModeRef.current;
@@ -2126,6 +2298,8 @@ function EditorPage() {
         setNewLineDraft((prev) => prev ? { ...prev, path: [...prev.path, [e.latlng.lat, e.latlng.lng]] } : prev);
       } else if (pm === "placeSub" && newSubDraftRef.current) {
         commitNewSub(e.latlng);
+      } else if (pm === "drawRegion" && drawingRegionRef.current) {
+        setGeo((prev) => ({ ...prev, region: [...(prev.region || []), [e.latlng.lat, e.latlng.lng]] }));
       }
     });
 
@@ -2139,6 +2313,8 @@ function EditorPage() {
 
   const newSubDraftRef = useRef(newSubDraft);
   useEffect(() => { newSubDraftRef.current = newSubDraft; }, [newSubDraft]);
+  const drawingRegionRef = useRef(drawingRegion);
+  useEffect(() => { drawingRegionRef.current = drawingRegion; }, [drawingRegion]);
 
   function commitNewSub(latlng) {
     const draft = newSubDraftRef.current;
@@ -2252,6 +2428,61 @@ function EditorPage() {
     }
   }, [newLineDraft]);
 
+  // ---- region boundary (existing + editable vertices + live draw preview) ----
+  useEffect(() => {
+    const group = regionLayerRef.current;
+    if (!group) return;
+    group.clearLayers();
+    const region = geo.region || [];
+    if (region.length >= 2) {
+      const closed = drawingRegion ? region : [...region, region[0]];
+      L.polyline(closed, { color: "#f2a53c", weight: 2, dashArray: "8 6", opacity: 0.9 }).addTo(group);
+    }
+    if (regionEditOn && !drawingRegion) {
+      region.forEach((pt, idx) => {
+        const marker = L.marker(pt, { icon: vertexDivIcon("#f2a53c"), draggable: true }).addTo(group);
+        marker.on("dragend", (e) => {
+          const ll = e.target.getLatLng();
+          setGeo((prev) => ({ ...prev, region: (prev.region || []).map((p, i) => i === idx ? [ll.lat, ll.lng] : p) }));
+        });
+        marker.on("contextmenu", (e) => {
+          L.DomEvent.stopPropagation(e);
+          if (region.length <= 3) { setStatus("A region needs at least 3 points."); return; }
+          setGeo((prev) => ({ ...prev, region: (prev.region || []).filter((_, i) => i !== idx) }));
+        });
+        marker.bindTooltip(`Boundary point ${idx + 1} \u00b7 drag to move \u00b7 right-click to delete`, { direction: "top" });
+      });
+    } else if (drawingRegion) {
+      region.forEach((pt, i) => {
+        L.circleMarker(pt, { radius: 4, color: "#f2a53c", fillColor: "#fff", fillOpacity: 1 }).addTo(group)
+          .bindTooltip(String(i + 1), { permanent: true, direction: "top", offset: [0, -6] });
+      });
+    }
+  }, [geo.region, regionEditOn, drawingRegion]);
+
+  function startNewRegion() {
+    setGeo((prev) => ({ ...prev, region: [] }));
+    setDrawingRegion(true);
+    setRegionEditOn(false);
+    setPointMode("drawRegion");
+    setSelectedLine(null);
+  }
+  function finishRegion() {
+    if (!geo.region || geo.region.length < 3) { setStatus("Click at least 3 points to outline a region."); return; }
+    setDrawingRegion(false);
+    setPointMode("idle");
+    setStatus("Region saved \u2014 click \u201cSave changes\u201d to keep it.");
+  }
+  function cancelRegion() {
+    setDrawingRegion(false);
+    setPointMode("idle");
+  }
+  async function deleteRegion() {
+    if (!await askConfirm("Delete the 400 kV Karjat region boundary?")) return;
+    setGeo((prev) => ({ ...prev, region: [] }));
+    setRegionEditOn(false);
+  }
+
   function startNewLine() {
     setNewLineDraft({ from: Object.keys(geo.subs)[0], to: Object.keys(geo.subs)[1], kv: "220", circuits: 1, status: "existing", color: "#42d6c8", path: [] });
     setPointMode("drawNew");
@@ -2337,7 +2568,9 @@ function EditorPage() {
   }
   async function resetDefaults() {
     if (!await askConfirm("Discard all edits and reload the built-in defaults?")) return;
-    setGeo({ subs: (() => { const s = {}; Object.entries(DEFAULT_SUBSTATIONS).forEach(([k, v]) => s[k] = { ...v }); return s; })(), lines: DEFAULT_LINES.map((l) => ({ ...l, path: l.path.map((p) => [p[0], p[1]]) })) });
+    setGeo({ subs: (() => { const s = {}; Object.entries(DEFAULT_SUBSTATIONS).forEach(([k, v]) => s[k] = { ...v }); return s; })(), lines: DEFAULT_LINES.map((l) => ({ ...l, path: l.path.map((p) => [p[0], p[1]]) })), region: [] });
+    setRegionEditOn(false);
+    setDrawingRegion(false);
   }
 
   const lineOptions = geo.lines.filter((l) => l.path && l.path.length >= 2);
@@ -2365,7 +2598,15 @@ function EditorPage() {
           setNewSubDraft({ name, kv, group: "custom" });
           setPointMode("placeSub");
         }
-      }, newSubDraft ? "\u2715 Cancel new substation" : "\u2795 Add a Substation")
+      }, newSubDraft ? "\u2715 Cancel new substation" : "\u2795 Add a Substation"),
+      React.createElement("button", {
+        className: "editor-primary-btn" + (regionEditOn || drawingRegion ? " active" : ""),
+        onClick: () => {
+          if (drawingRegion) { cancelRegion(); return; }
+          if (geo.region && geo.region.length) { setRegionEditOn(!regionEditOn); return; }
+          startNewRegion();
+        }
+      }, (geo.region && geo.region.length) ? (regionEditOn ? "\u2715 Done editing region" : "\u270f\ufe0f Edit Region") : drawingRegion ? "\u2715 Cancel region" : "\u2795 Add a Region")
     ),
     newLineDraft && React.createElement("div", { className: "line-card editor-top-form" },
       React.createElement("div", { className: "line-card-title" }, "New line"),
@@ -2395,6 +2636,19 @@ function EditorPage() {
       )
     ),
     newSubDraft && React.createElement("div", { className: "disclaimer editor-top-form" }, "Click anywhere on the map to place \u201c", newSubDraft.name, "\u201d."),
+    drawingRegion && React.createElement("div", { className: "line-card editor-top-form" },
+      React.createElement("div", { className: "line-card-title" }, "New region boundary"),
+      React.createElement("div", { className: "empty-hint" }, "Click points on the map to trace the 400 kV Karjat coverage boundary (", (geo.region || []).length, " placed, need at least 3). It closes back to the first point automatically."),
+      React.createElement("div", { className: "edit-actions" },
+        React.createElement("button", { className: "save-btn", onClick: finishRegion }, "Finish region"),
+        React.createElement("button", { className: "cancel-btn", onClick: cancelRegion }, "Cancel")
+      )
+    ),
+    regionEditOn && !drawingRegion && React.createElement("div", { className: "line-card editor-top-form" },
+      React.createElement("div", { className: "line-card-title" }, "Editing region boundary"),
+      React.createElement("div", { className: "empty-hint" }, "Drag any boundary point to move it \u00b7 right-click a point to delete it (", (geo.region || []).length, " points)."),
+      React.createElement("button", { className: "cancel-btn", onClick: deleteRegion }, "Delete region entirely")
+    ),
     React.createElement("div", { className: "editor-toolbar" },
       React.createElement("label", { className: "editor-toggle" },
         React.createElement("input", { type: "checkbox", checked: subEditOn, onChange: (e) => setSubEditOn(e.target.checked) }),
