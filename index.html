@@ -85,6 +85,19 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .popup-officer { padding: 3px 0; font-size: 11.5px; }
 
 .split-layout { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
+.lmsd-tabs { display: flex; gap: 8px; margin: 4px 0 16px; }
+.lmsd-tab { background: var(--panel2); border: 1px solid var(--border); color: var(--ink-muted); border-radius: 999px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
+.lmsd-tab.active { background: rgba(66,214,200,0.14); border-color: var(--cyan); color: var(--cyan); font-weight: 600; }
+.map-toprow-controls { display: flex; gap: 10px; margin-bottom: 10px; }
+.trace-tool { display: flex; flex-direction: column; gap: 14px; }
+.trace-controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.trace-field { display: flex; flex-direction: column; gap: 5px; font-size: 11.5px; color: var(--ink-muted); font-family: "JetBrains Mono"; }
+.trace-field select, .trace-field input[type=number] { background: var(--panel2); border: 1px solid var(--border); color: var(--ink); border-radius: 8px; padding: 7px 9px; font-size: 13px; min-width: 140px; }
+.trace-field input[type=color] { width: 44px; height: 34px; border: 1px solid var(--border); border-radius: 8px; background: none; padding: 2px; cursor: pointer; }
+.trace-color-field { flex-direction: row; align-items: center; gap: 8px; }
+.trace-result { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; font-size: 13px; display: flex; flex-direction: column; gap: 5px; }
+.trace-lmsd-primary strong { color: var(--cyan); }
+.trace-lmsd-margin { color: #e0a94a; font-size: 12.5px; }
 @media (max-width: 900px) { .split-layout { grid-template-columns: 1fr; } }
 .side-panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; height: 70vh; overflow-y: auto; }
 .empty-hint { color: var(--ink-muted); font-size: 13px; line-height: 1.5; }
@@ -1060,6 +1073,12 @@ function GridMap({
   jurisdictionData = JURISDICTION_SEED,
   showKm = false,
   highlightCorridorId = null,
+  selectedLineKey = null,
+  onSelectLine = null,
+  traceHighlight = null,
+  towerNumbersControl = null,
+  lineNamesControl = null,
+  compactToolbar = false,
   weatherEnabled = false,
   onSelect = () => {
   },
@@ -1077,8 +1096,12 @@ function GridMap({
   const [hybridOpacity, setHybridOpacity] = useState(55);
   const [mapZoom, setMapZoom] = useState(zoom);
   const [viewTick, setViewTick] = useState(0);
-  const [showTowerNumbers, setShowTowerNumbers] = useState(false);
-  const [showLineNames, setShowLineNames] = useState(true);
+  const [showTowerNumbersInternal, setShowTowerNumbersInternal] = useState(false);
+  const [showLineNamesInternal, setShowLineNamesInternal] = useState(false);
+  const showTowerNumbers = towerNumbersControl ? towerNumbersControl.value : showTowerNumbersInternal;
+  const setShowTowerNumbers = towerNumbersControl ? towerNumbersControl.onChange : setShowTowerNumbersInternal;
+  const showLineNames = lineNamesControl ? lineNamesControl.value : showLineNamesInternal;
+  const setShowLineNames = lineNamesControl ? lineNamesControl.onChange : setShowLineNamesInternal;
   const [weatherData, setWeatherData] = useState({});
   const [downloading, setDownloading] = useState(false);
   useEffect(() => {
@@ -1154,6 +1177,18 @@ function GridMap({
         });
       });
     }
+    if (traceHighlight && traceHighlight.fullPath && traceHighlight.fullPath.length > 1) {
+      const slice = pathSliceByFraction(traceHighlight.fullPath, traceHighlight.f0, traceHighlight.f1);
+      if (slice.length >= 2) {
+        L.polygon(ribbonFromPath(slice, CORRIDOR_HALF_WIDTH_M), {
+          color: traceHighlight.color,
+          weight: 2,
+          fillColor: traceHighlight.color,
+          fillOpacity: 0.6,
+          opacity: 0.95
+        }).addTo(group);
+      }
+    }
     if (REGION.length >= 3) {
       L.polygon([...REGION, REGION[0]], {
         color: "#c9902f",
@@ -1191,18 +1226,25 @@ function GridMap({
       const color = line.color || KV_COLOR[line.kv] || "#999";
       const dash = line.status === "planned" ? "6 8" : null;
       const paths = line.circuits >= 2 ? [offsetPath(line.path, 90), offsetPath(line.path, -90)] : [line.path];
+      const isSelectedLine = selectedLineKey && (Array.isArray(selectedLineKey) ? selectedLineKey.includes(line.key) : selectedLineKey === line.key);
+      const dimForSelection = selectedLineKey && (Array.isArray(selectedLineKey) ? selectedLineKey.length > 0 : true) && !isSelectedLine ? 0.5 : 1;
+      const short = (n) => n.replace("400 kV ", "").replace("220 kV ", "").replace("765 kV ", "");
+      const matchedEntries0 = (jurisdictionData || []).filter((e) => (e.lineKeys || []).includes(line.key));
+      const tooltipLabel = matchedEntries0.length
+        ? matchedEntries0.map((e) => `${e.line} (${e.length})`).join(" / ")
+        : `${short((SUBSTATIONS[line.from] || {}).name || line.from)} \u2194 ${short((SUBSTATIONS[line.to] || {}).name || line.to)} (${line.km || ""})`;
       paths.forEach((p) => {
-        L.polyline(p, {
+        const poly = L.polyline(p, {
           color,
           weight: emphasized ? (line.kv === "220" ? 3 : 3.6) : 1.1,
-          opacity: emphasized ? 0.92 : 0.55,
+          opacity: (emphasized ? 0.92 : 0.55) * dimForSelection,
           dashArray: dash,
           lineCap: "round"
-        }).addTo(group).bindTooltip(`${line.from} \u2192 ${line.to} (${line.km || ""})`, { sticky: true });
+        }).addTo(group).bindTooltip(tooltipLabel, { sticky: true });
+        if (onSelectLine) poly.on("click", () => onSelectLine(line.key));
       });
       if (showLineNames && emphasized && line.path.length > 1) {
         const midPt = interpolateAlong(line.path, 0.5);
-        const short = (n) => n.replace("400 kV ", "").replace("220 kV ", "").replace("765 kV ", "");
         const matchedNames = lineKeyToNames(jurisdictionData, line.key);
         const label = matchedNames.length
           ? matchedNames.join(" / ")
@@ -1269,15 +1311,17 @@ function GridMap({
       marker.bindPopup(html);
       marker.on("click", () => onSelect(key, "substation"));
       const shortName = s.name.replace("400 kV ", "").replace("220 kV ", "").replace("765 kV ", "");
-      L.marker([s.lat, s.lon], {
-        icon: L.divIcon({
-          className: "sub-name-icon",
-          html: `<div class="sub-name-label">${shortName}</div>`,
-          iconSize: [1, 1],
-          iconAnchor: [0, 0]
-        }),
-        interactive: false
-      }).addTo(group);
+      if ((mapZoom / 19 * 100) >= 47) {
+        L.marker([s.lat, s.lon], {
+          icon: L.divIcon({
+            className: "sub-name-icon",
+            html: `<div class="sub-name-label">${shortName}</div>`,
+            iconSize: [1, 1],
+            iconAnchor: [0, 0]
+          }),
+          interactive: false
+        }).addTo(group);
+      }
       if (weatherEnabled && w) {
         const icon = L.divIcon({
           className: "weather-badge",
@@ -1288,7 +1332,7 @@ function GridMap({
         L.marker([s.lat, s.lon], { icon }).addTo(group);
       }
     });
-  }, [substationKeys, lineKeys, kvFilter, emphasizeKeys, extraLayers, showZones, colorVersion, jurisdictionData, showGraticule, showKm, weatherEnabled, weatherData, onSelect, mapZoom, viewTick, showTowerNumbers, showLineNames, highlightCorridorId]);
+  }, [substationKeys, lineKeys, kvFilter, emphasizeKeys, extraLayers, showZones, colorVersion, jurisdictionData, showGraticule, showKm, weatherEnabled, weatherData, onSelect, mapZoom, viewTick, showTowerNumbers, showLineNames, highlightCorridorId, selectedLineKey, onSelectLine, traceHighlight]);
   useEffect(() => {
     if (!weatherEnabled) return;
     const keys = Object.entries(SUBSTATIONS).filter(([k, s]) => !s.hidden && (!substationKeys || substationKeys.includes(k))).map(([k, s]) => ({ key: k, lat: s.lat, lon: s.lon }));
@@ -1313,7 +1357,7 @@ function GridMap({
       setDownloading(false);
     }
   }, [downloadName]);
-  return /* @__PURE__ */ React.createElement("div", { className: "gridmap-wrap", style: { height } }, /* @__PURE__ */ React.createElement("div", { ref: containerRef, className: "gridmap-canvas" }), /* @__PURE__ */ React.createElement("div", { className: "map-controls" }, /* @__PURE__ */ React.createElement("div", { className: "layer-switch" }, ["normal", "hybrid", "satellite"].map((m) => /* @__PURE__ */ React.createElement("button", { key: m, className: mode === m ? "active" : "", onClick: () => setMode(m) }, m === "normal" ? "Map" : m === "hybrid" ? "Hybrid" : "Satellite"))), /* @__PURE__ */ React.createElement("button", { className: "layer-switch-single" + (showTowerNumbers ? " active" : ""), onClick: () => setShowTowerNumbers(!showTowerNumbers), title: "Tower numbers show once you zoom in close" }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"), /* @__PURE__ */ React.createElement("label", { className: "switch-toggle" + (showLineNames ? " on" : ""), title: "Show line name labels on the map" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: showLineNames, onChange: () => setShowLineNames(!showLineNames), style: { display: "none" } }), /* @__PURE__ */ React.createElement("span", { className: "switch-track" }, /* @__PURE__ */ React.createElement("span", { className: "switch-thumb" })), "Display Line Names"), /* @__PURE__ */ React.createElement("div", { className: "zoom-readout", title: "Map zoom level" }, "Zoom ", Math.round((mapZoom / 19) * 100), "% (L", mapZoom, ")"), mode === "hybrid" && /* @__PURE__ */ React.createElement("div", { className: "opacity-slider" }, /* @__PURE__ */ React.createElement("span", null, "Satellite opacity"), /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "gridmap-wrap", style: { height } }, /* @__PURE__ */ React.createElement("div", { ref: containerRef, className: "gridmap-canvas" }), /* @__PURE__ */ React.createElement("div", { className: "map-controls" }, /* @__PURE__ */ React.createElement("div", { className: "layer-switch" }, ["normal", "hybrid", "satellite"].map((m) => /* @__PURE__ */ React.createElement("button", { key: m, className: mode === m ? "active" : "", onClick: () => setMode(m) }, m === "normal" ? "Map" : m === "hybrid" ? "Hybrid" : "Satellite"))), !compactToolbar && /* @__PURE__ */ React.createElement("button", { className: "layer-switch-single" + (showTowerNumbers ? " active" : ""), onClick: () => setShowTowerNumbers(!showTowerNumbers), title: "Tower numbers show once you zoom in close" }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"), !compactToolbar && /* @__PURE__ */ React.createElement("label", { className: "switch-toggle" + (showLineNames ? " on" : ""), title: "Show line name labels on the map" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: showLineNames, onChange: () => setShowLineNames(!showLineNames), style: { display: "none" } }), /* @__PURE__ */ React.createElement("span", { className: "switch-track" }, /* @__PURE__ */ React.createElement("span", { className: "switch-thumb" })), "Display Line Names"), /* @__PURE__ */ React.createElement("div", { className: "zoom-readout", title: "Map zoom level" }, "Zoom ", Math.round((mapZoom / 19) * 100), "% (L", mapZoom, ")"), mode === "hybrid" && /* @__PURE__ */ React.createElement("div", { className: "opacity-slider" }, /* @__PURE__ */ React.createElement("span", null, "Satellite opacity"), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "range",
@@ -1362,11 +1406,17 @@ function useLiveJurisdiction() {
     setLoading(true);
     fetch(`${APPS_SCRIPT_URL}?action=getData&_=${Date.now()}`, { cache: "no-store" }).then((r) => r.json()).then((d) => {
       if (d.ok && d.lines && d.lines.length) {
-        // Borrow lineKeys from the local seed by matching line name, since the
-        // Sheet doesn't know about map geometry \u2014 only officers/segments.
-        const merged = d.lines.map((live) => {
-          const seedMatch = JURISDICTION_SEED.find((s) => s.line === live.line);
-          return seedMatch ? { ...live, lineKeys: seedMatch.lineKeys } : live;
+        // The Sheet only knows officers/segments/length \u2014 never map geometry.
+        // Always keep the seed's lineKeys as the source of truth, only pulling
+        // the editable fields from live data when the line name matches exactly.
+        // A line with no live match (name drift, not-yet-synced Sheet, etc.)
+        // keeps its full seed entry rather than ending up geometry-less, which
+        // is what was making corridors/schematics/the LMSD table go blank a
+        // few seconds after load.
+        const liveByName = new Map(d.lines.map((l) => [l.line, l]));
+        const merged = JURISDICTION_SEED.map((seed) => {
+          const live = liveByName.get(seed.line);
+          return live ? { ...seed, segments: live.segments || seed.segments, teams: live.teams || seed.teams, length: live.length || seed.length } : seed;
         });
         setLines(merged);
       }
@@ -1448,19 +1498,121 @@ const LMSD_LAYER_DEFS = [
   { key: "all400", label: "400 kV Lines (All lines)", color: "#e53935", lineKeys: null, kvFilter: ["400", "765", "planned"] },
   { key: "all220", label: "220 kV Lines (All lines)", color: "#4fc3f7", lineKeys: null, kvFilter: ["220"] }
 ];
+// ---- Trace Line tool: highlight colour persists indefinitely (localStorage);
+// the accuracy margin resets to 10% each new browser session (sessionStorage). ----
+const TRACE_COLOR_KEY = "karjatTraceHighlightColor_v1";
+const TRACE_MARGIN_KEY = "karjatTraceMarginPct_v1";
+function loadTraceColor() {
+  try { return localStorage.getItem(TRACE_COLOR_KEY) || "#ffcc00"; } catch (e) { return "#ffcc00"; }
+}
+function saveTraceColor(c) {
+  try { localStorage.setItem(TRACE_COLOR_KEY, c); } catch (e) {}
+}
+function loadTraceMargin() {
+  try { const v = sessionStorage.getItem(TRACE_MARGIN_KEY); return v ? parseFloat(v) : 10; } catch (e) { return 10; }
+}
+function saveTraceMargin(v) {
+  try { sessionStorage.setItem(TRACE_MARGIN_KEY, String(v)); } catch (e) {}
+}
+function TraceLineTool({ lines }) {
+  const lineOptions = lines.map((l) => l.line);
+  const [selectedLine, setSelectedLine] = useState(lineOptions[0] || "");
+  const [kmFromKarjat, setKmFromKarjat] = useState(0);
+  const [marginPct, setMarginPct] = useState(loadTraceMargin());
+  const [highlightColor, setHighlightColorState] = useState(loadTraceColor());
+  function setHighlightColor(c) {
+    setHighlightColorState(c);
+    saveTraceColor(c);
+  }
+  function setMargin(v) {
+    setMarginPct(v);
+    saveTraceMargin(v);
+  }
+  const entry = lines.find((l) => l.line === selectedLine);
+  const totalKm = entry ? parseKmTotal(entry.length) : 0;
+  const kmClamped = Math.max(0, Math.min(totalKm, kmFromKarjat || 0));
+  const kmFromOther = +(totalKm - kmClamped).toFixed(2);
+  const lastLineKey = entry ? entry.lineKeys[entry.lineKeys.length - 1] : null;
+  const lastLine = lastLineKey ? LINES.find((l) => l.key === lastLineKey) : null;
+  const otherEndName = lastLine ? (SUBSTATIONS[lastLine.to] || {}).name || lastLine.to : "\u2014";
+  const karjatEndName = (SUBSTATIONS.karjat || {}).name || "400 kV Karjat SS";
+  const marginKm = totalKm * (marginPct / 100);
+  const rangeStart = Math.max(0, kmClamped - marginKm);
+  const rangeEnd = Math.min(totalKm, kmClamped + marginKm);
+  const { primaryDivision, marginDivisions } = useMemo(() => {
+    if (!entry) return { primaryDivision: null, marginDivisions: [] };
+    let primary = null;
+    const extras = [];
+    entry.segments.forEach((seg) => {
+      const [c0, c1] = parseChainageRange(seg.chainage);
+      if (kmClamped >= c0 && kmClamped <= c1) primary = seg.division;
+      else if (rangeEnd >= c0 && rangeStart <= c1 && entry.segments.length > 1) extras.push(seg.division);
+    });
+    return { primaryDivision: primary, marginDivisions: [...new Set(extras)] };
+  }, [entry, kmClamped, rangeStart, rangeEnd]);
+  const traceHighlight = useMemo(() => {
+    if (!entry || !totalKm) return null;
+    return { fullPath: buildFullPath(entry.lineKeys), f0: rangeStart / totalKm, f1: rangeEnd / totalKm, color: highlightColor };
+  }, [entry, totalKm, rangeStart, rangeEnd, highlightColor]);
+  return React.createElement("div", { className: "trace-tool" },
+    React.createElement("div", { className: "trace-controls" },
+      React.createElement("label", { className: "trace-field" }, "Line",
+        React.createElement("select", { value: selectedLine, onChange: (e) => setSelectedLine(e.target.value) },
+          lineOptions.map((name) => React.createElement("option", { key: name, value: name }, name)))),
+      React.createElement("label", { className: "trace-field" }, `Distance from ${karjatEndName} (km)`,
+        React.createElement("input", { type: "number", min: 0, max: totalKm, step: 0.1, value: kmFromKarjat, onChange: (e) => setKmFromKarjat(parseFloat(e.target.value) || 0) })),
+      React.createElement("label", { className: "trace-field" }, `Distance from ${otherEndName} (km)`,
+        React.createElement("input", { type: "number", value: kmFromOther, disabled: true, title: "Auto-filled: total line length \u2212 distance from Karjat end" })),
+      React.createElement("label", { className: "trace-field" }, "Margin % (this session only)",
+        React.createElement("input", { type: "number", min: 0, max: 50, step: 1, value: marginPct, onChange: (e) => setMargin(parseFloat(e.target.value) || 0) })),
+      React.createElement("label", { className: "trace-field trace-color-field" }, "Highlight colour",
+        React.createElement("input", { type: "color", value: highlightColor, onChange: (e) => setHighlightColor(e.target.value) }))
+    ),
+    entry && React.createElement("div", { className: "trace-result" },
+      React.createElement("div", null, "Total line length: ", React.createElement("span", { className: "mono" }, totalKm), " km"),
+      React.createElement("div", null, "Highlighted range: ", React.createElement("span", { className: "mono" }, rangeStart.toFixed(2)), " \u2013 ", React.createElement("span", { className: "mono" }, rangeEnd.toFixed(2)), " km (\u00b1", marginPct, "% margin)"),
+      React.createElement("div", { className: "trace-lmsd-primary" }, "LMSD responsible at this point: ", React.createElement("strong", null, primaryDivision || "\u2014")),
+      marginDivisions.length > 0 && React.createElement("div", { className: "trace-lmsd-margin" },
+        "\u26a0\ufe0f Within the \u00b1", marginPct, "% margin, this could also fall under: ", marginDivisions.join(", "))
+    ),
+    React.createElement(GridMap, {
+      lineKeys: null,
+      kvFilter: null,
+      showZones: false,
+      jurisdictionData: lines,
+      traceHighlight,
+      showKm: true,
+      height: "60vh",
+      downloadName: "trace-line-map"
+    })
+  );
+}
 function LmsdPage() {
+  const [activeTab, setActiveTab] = useState("all");
+  const [showTowerNumbers, setShowTowerNumbers] = useState(false);
+  const [showLineNames, setShowLineNames] = useState(false);
   const liveEnabled = APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("PASTE_");
   const [lines, setLines] = useState(JURISDICTION_SEED.map((l) => ({ ...l, teams: l.teams.map((t) => ({ ...t, members: t.members.map((m) => ({ ...m })) })) })));
   const [loading, setLoading] = useState(false);
   const [editingLine, setEditingLine] = useState(null);
   const [saving, setSaving] = useState(false);
   const [selectedCorridor, setSelectedCorridor] = useState(null);
-  const [activeLayers, setActiveLayers] = useState({});
+  const [activeLayers, setActiveLayers] = useState({ karjat400: true, karjat220: true });
   const [colorVersion, setColorVersion] = useState(0);
   useEffect(() => {
     if (!liveEnabled) return;
     setLoading(true);
-    fetch(`${APPS_SCRIPT_URL}?action=getData&_=${Date.now()}`, { cache: "no-store" }).then((r) => r.json()).then((d) => d.ok && setLines(d.lines)).catch(() => {
+    fetch(`${APPS_SCRIPT_URL}?action=getData&_=${Date.now()}`, { cache: "no-store" }).then((r) => r.json()).then((d) => {
+      if (!d.ok || !d.lines || !d.lines.length) return;
+      // Never let live data (which has no geometry) fully replace a line \u2014
+      // only pull the editable officer/segment/length fields per name match,
+      // keeping lineKeys from the seed always intact.
+      const liveByName = new Map(d.lines.map((l) => [l.line, l]));
+      setLines((prev) => prev.map((seedLine) => {
+        const live = liveByName.get(seedLine.line);
+        return live ? { ...seedLine, segments: live.segments || seedLine.segments, teams: live.teams || seedLine.teams, length: live.length || seedLine.length } : seedLine;
+      }));
+    }).catch(() => {
     }).finally(() => setLoading(false));
   }, []);
   function updateLine(lineName, updater) {
@@ -1533,6 +1685,11 @@ function LmsdPage() {
       officers
     };
   }, [selectedCorridor, lines]);
+  const selectedLineKeys = useMemo(() => {
+    if (!selectedCorridor) return null;
+    const entry = lines.find((l) => l.line === selectedCorridor.line);
+    return entry ? entry.lineKeys : null;
+  }, [selectedCorridor, lines]);
   const lmsdGroups = useMemo(() => {
     const map = {};
     lines.forEach((line) => {
@@ -1554,6 +1711,19 @@ function LmsdPage() {
       title: "LMSD Jurisdiction Map",
       subtitle: loading ? "Loading live officer data\u2026" : "Coloured corridor along each line \u00b7 hover or click a stretch for its responsible LMSD office"
     }),
+    React.createElement("div", { className: "lmsd-tabs" },
+      React.createElement("button", { className: "lmsd-tab" + (activeTab === "all" ? " active" : ""), onClick: () => setActiveTab("all") }, "All Lines"),
+      React.createElement("button", { className: "lmsd-tab" + (activeTab === "trace" ? " active" : ""), onClick: () => setActiveTab("trace") }, "Trace Line Area")
+    ),
+    activeTab === "trace" ? React.createElement(TraceLineTool, { lines }) : React.createElement(React.Fragment, null,
+    React.createElement("div", { className: "map-toprow-controls" },
+      React.createElement("button", { className: "layer-switch-single" + (showTowerNumbers ? " active" : ""), onClick: () => setShowTowerNumbers(!showTowerNumbers), title: "Tower numbers show once you zoom in close" }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"),
+      React.createElement("label", { className: "switch-toggle" + (showLineNames ? " on" : "") },
+        React.createElement("input", { type: "checkbox", checked: showLineNames, onChange: () => setShowLineNames(!showLineNames), style: { display: "none" } }),
+        React.createElement("span", { className: "switch-track" }, React.createElement("span", { className: "switch-thumb" })),
+        "Display Line Names"
+      )
+    ),
     React.createElement("div", { className: "split-layout" },
       React.createElement(GridMap, {
         substationKeys: KARJAT_SUBSTATION_KEYS,
@@ -1563,7 +1733,11 @@ function LmsdPage() {
         colorVersion,
         extraLayers,
         showKm: true,
+        compactToolbar: true,
+        towerNumbersControl: { value: showTowerNumbers, onChange: setShowTowerNumbers },
+        lineNamesControl: { value: showLineNames, onChange: setShowLineNames },
         highlightCorridorId: selectedCorridor ? selectedCorridor.id : null,
+        selectedLineKey: selectedLineKeys,
         onSelect: (payload, type) => type === "corridor" && setSelectedCorridor(payload),
         height: "72vh",
         downloadName: "karjat-lmsd-map"
@@ -1731,7 +1905,7 @@ function LmsdPage() {
           );
         })
       )
-    ),
+    )),
     React.createElement(Disclaimer, null)
   );
 }
