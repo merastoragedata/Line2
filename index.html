@@ -91,7 +91,13 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .empty-hint.light { color: rgba(255,255,255,0.8); }
 .jur-card { border-top: 1px solid var(--border); padding: 10px 0; }
 .jur-line-name { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+.jur-chainage { font-size: 11.5px; color: var(--ink-muted); font-family: "JetBrains Mono"; margin-bottom: 8px; }
 .jur-officer { font-size: 12.5px; color: var(--ink-muted); padding: 3px 0; }
+.side-panel-close-row { display: flex; justify-content: space-between; align-items: center; }
+.side-panel-clear { background: none; border: 1px solid var(--border); color: var(--ink-muted); border-radius: 6px; width: 24px; height: 24px; cursor: pointer; font-size: 12px; }
+.jur-distances { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin: 6px 0 10px; }
+.jur-distance-row { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+.jur-distance-row.muted-small { color: var(--ink-muted); font-size: 11px; border-top: 1px dashed var(--border); margin-top: 4px; padding-top: 5px; justify-content: flex-start; gap: 5px; }
 .jur-mobile { font-family: "JetBrains Mono"; font-size: 11.5px; padding-left: 20px; color: var(--cyan); }
 .jur-mobile-actions { display: inline-flex; align-items: center; gap: 6px; padding-left: 20px; margin-top: 3px; }
 .contact-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 9px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--border); color: var(--cyan); text-decoration: none; }
@@ -266,6 +272,12 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .line-name-label { display: inline-block; position: relative; left: -50%; top: -8px; background: rgba(255,255,255,0.9); color: #17222e; font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 10.5px; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15); white-space: nowrap; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
 .layer-switch-single { background: var(--panel2); border: 1px solid var(--border); color: var(--ink-muted); border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
 .layer-switch-single.active { background: rgba(66,214,200,0.14); border-color: var(--cyan); color: var(--cyan); }
+.switch-toggle { display: inline-flex; align-items: center; gap: 7px; background: var(--panel2); border: 1px solid var(--border); border-radius: 999px; padding: 5px 11px 5px 6px; font-size: 12px; color: var(--ink-muted); cursor: pointer; user-select: none; }
+.switch-toggle .switch-track { position: relative; width: 30px; height: 16px; border-radius: 999px; background: rgba(255,255,255,0.18); transition: background 0.2s ease; flex-shrink: 0; }
+.switch-toggle .switch-thumb { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: left 0.2s ease; }
+.switch-toggle.on { color: var(--cyan); border-color: var(--cyan); }
+.switch-toggle.on .switch-track { background: var(--cyan); }
+.switch-toggle.on .switch-thumb { left: 16px; }
 .zoom-readout { font-family: "JetBrains Mono", monospace; font-size: 11.5px; color: var(--ink-muted); background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(5,8,12,0.72); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(2px); }
 .modal-box { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; width: min(420px, 90vw); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
@@ -382,7 +394,7 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
      Verified with `node --check` before shipping, so no browser JSX transform step is needed or can fail. -->
 <script>
 const { useEffect, useRef, useState, useCallback, useMemo } = React;
-const APPS_SCRIPT_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1qjIKX1jM8RAxH11MTTfDHvieUdOoP0JaObXDzVPTltDn103McLOe0WaNAkrPC6QdQg/exec";
 const DEFAULT_SUBSTATIONS = {
   // ---- Core 400kV Karjat network (confirmed exact pins) ----
   karjat: { name: "400 kV Karjat SS", lat: 18.448778, lon: 74.746306, kv: "400", group: "karjat" },
@@ -792,6 +804,16 @@ function parseChainageRange(str) {
   if (!nums || nums.length < 2) return [0, 1];
   return [parseFloat(nums[0]), parseFloat(nums[nums.length - 1])];
 }
+// Maps a physical LINES.key to the standardized Line Maintenance Directory
+// name(s) that include it \u2014 a shared corridor segment (e.g. Karjat\u2192LILO)
+// can belong to more than one named circuit, so this returns every match.
+function lineKeyToNames(jurisdictionData, key) {
+  const names = new Set();
+  (jurisdictionData || []).forEach((entry) => {
+    if ((entry.lineKeys || []).includes(key)) names.add(entry.line);
+  });
+  return [...names];
+}
 function buildFullPath(lineKeys) {
   const pts = [];
   (lineKeys || []).forEach((key) => {
@@ -907,6 +929,35 @@ function divisionColor(name, kv) {
   const lightness = 42 + (hashv % 22); // 42-64%
   return hslToHex((oppositeHue + hueJitter + 360) % 360, 68, lightness);
 }
+// Projects a click point onto a path and returns how far along the path's
+// cumulative planar length (0-1 fraction) the nearest point sits \u2014 used to
+// turn a click into a "distance from each end" reading, consistent with how
+// pathSliceByFraction already treats chainage as a planar-length fraction.
+function nearestPointFractionOnPath(path, latlng) {
+  if (!path || path.length < 2) return 0;
+  const segLens = [];
+  let total = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    const d = Math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1]);
+    segLens.push(d);
+    total += d;
+  }
+  if (!total) return 0;
+  let best = { distSq: Infinity, cumLen: 0 };
+  let cum = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    const [lat1, lon1] = path[i], [lat2, lon2] = path[i + 1];
+    const dx = lat2 - lat1, dy = lon2 - lon1;
+    const len2 = dx * dx + dy * dy;
+    let t = len2 ? ((latlng.lat - lat1) * dx + (latlng.lng - lon1) * dy) / len2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    const px = lat1 + dx * t, py = lon1 + dy * t;
+    const distSq = (latlng.lat - px) ** 2 + (latlng.lng - py) ** 2;
+    if (distSq < best.distSq) best = { distSq, cumLen: cum + segLens[i] * t };
+    cum += segLens[i];
+  }
+  return best.cumLen / total;
+}
 // Builds one ribbon polygon per (line, segment) pair: the corridor of that
 // LMSD division's stretch of that physical circuit. Falls back gracefully
 // (skips) if lineKeys/path data isn't available for a jurisdiction entry.
@@ -920,6 +971,9 @@ function buildLmsdCorridors(jurisdictionData) {
     const segTeamAligned = entry.segments.length === entry.teams.length;
     const repLine = LINES.find((l) => l.key === entry.lineKeys[0]);
     const kv = repLine ? repLine.kv : "220";
+    const lastLine = LINES.find((l) => l.key === entry.lineKeys[entry.lineKeys.length - 1]);
+    const otherEndName = lastLine ? ((SUBSTATIONS[lastLine.to] || {}).name || lastLine.to) : "far end";
+    const karjatEndName = (SUBSTATIONS.karjat || {}).name || "400 kV Karjat SS";
     entry.segments.forEach((seg, i) => {
       const [c0, c1] = parseChainageRange(seg.chainage);
       const f0 = totalKm ? c0 / totalKm : 0;
@@ -935,7 +989,11 @@ function buildLmsdCorridors(jurisdictionData) {
         chainage: seg.chainage,
         color: divisionColor(seg.division, kv),
         polygon: ribbonFromPath(slice, CORRIDOR_HALF_WIDTH_M),
-        officers
+        officers,
+        fullPath,
+        totalKm,
+        karjatEndName,
+        otherEndName
       });
     });
   });
@@ -1001,6 +1059,7 @@ function GridMap({
   showGraticule = false,
   jurisdictionData = JURISDICTION_SEED,
   showKm = false,
+  highlightCorridorId = null,
   weatherEnabled = false,
   onSelect = () => {
   },
@@ -1052,13 +1111,18 @@ function GridMap({
     group.clearLayers();
     if (showZones) {
       const corridors = buildLmsdCorridors(jurisdictionData);
+      const anySelected = !!highlightCorridorId;
       corridors.forEach((c) => {
+        const isSelected = c.id === highlightCorridorId;
+        const baseFillOpacity = anySelected ? (isSelected ? 0.58 : 0.1) : 0.24;
+        const baseWeight = isSelected ? 3 : 1;
+        const baseOpacity = anySelected ? (isSelected ? 1 : 0.35) : 0.75;
         const poly = L.polygon(c.polygon, {
-          color: c.color,
-          weight: 1,
+          color: isSelected ? "#fff" : c.color,
+          weight: baseWeight,
           fillColor: c.color,
-          fillOpacity: 0.24,
-          opacity: 0.75
+          fillOpacity: baseFillOpacity,
+          opacity: baseOpacity
         }).addTo(group);
         const officerLines = (c.officers || []).map((m) => `${m.name} (${m.post}) \xB7 ${m.mobile}`);
         const html = `<div class="popup-card">
@@ -1069,9 +1133,25 @@ function GridMap({
           </div>`;
         poly.bindTooltip(`${c.division} \u00b7 ${c.chainage}`, { sticky: true });
         poly.bindPopup(html);
-        poly.on("mouseover", () => poly.setStyle({ fillOpacity: 0.45, weight: 2 }));
-        poly.on("mouseout", () => poly.setStyle({ fillOpacity: 0.24, weight: 1 }));
-        poly.on("click", () => onSelect(c.division, "zone"));
+        poly.on("mouseover", () => poly.setStyle({ fillOpacity: Math.min(1, baseFillOpacity + 0.2), weight: Math.max(baseWeight, 2) }));
+        poly.on("mouseout", () => poly.setStyle({ fillOpacity: baseFillOpacity, weight: baseWeight }));
+        poly.on("click", (e) => {
+          const frac = nearestPointFractionOnPath(c.fullPath, e.latlng);
+          const kmFromKarjat = +(frac * c.totalKm).toFixed(2);
+          const kmFromOther = +((1 - frac) * c.totalKm).toFixed(2);
+          onSelect({
+            id: c.id,
+            division: c.division,
+            line: c.line,
+            chainage: c.chainage,
+            officers: c.officers,
+            totalKm: c.totalKm,
+            karjatEndName: c.karjatEndName,
+            otherEndName: c.otherEndName,
+            kmFromKarjat,
+            kmFromOther
+          }, "corridor");
+        });
       });
     }
     if (REGION.length >= 3) {
@@ -1122,13 +1202,15 @@ function GridMap({
       });
       if (showLineNames && emphasized && line.path.length > 1) {
         const midPt = interpolateAlong(line.path, 0.5);
-        const fromName = (SUBSTATIONS[line.from] || {}).name || line.from;
-        const toName = (SUBSTATIONS[line.to] || {}).name || line.to;
         const short = (n) => n.replace("400 kV ", "").replace("220 kV ", "").replace("765 kV ", "");
+        const matchedNames = lineKeyToNames(jurisdictionData, line.key);
+        const label = matchedNames.length
+          ? matchedNames.join(" / ")
+          : `${short((SUBSTATIONS[line.from] || {}).name || line.from)} \u2194 ${short((SUBSTATIONS[line.to] || {}).name || line.to)}`;
         L.marker(midPt, {
           icon: L.divIcon({
             className: "line-name-icon",
-            html: `<div class="line-name-label">${short(fromName)} \u2194 ${short(toName)}</div>`,
+            html: `<div class="line-name-label">${label}</div>`,
             iconSize: [1, 1],
             iconAnchor: [0, 0]
           }),
@@ -1206,7 +1288,7 @@ function GridMap({
         L.marker([s.lat, s.lon], { icon }).addTo(group);
       }
     });
-  }, [substationKeys, lineKeys, kvFilter, emphasizeKeys, extraLayers, showZones, colorVersion, jurisdictionData, showGraticule, showKm, weatherEnabled, weatherData, onSelect, mapZoom, viewTick, showTowerNumbers, showLineNames]);
+  }, [substationKeys, lineKeys, kvFilter, emphasizeKeys, extraLayers, showZones, colorVersion, jurisdictionData, showGraticule, showKm, weatherEnabled, weatherData, onSelect, mapZoom, viewTick, showTowerNumbers, showLineNames, highlightCorridorId]);
   useEffect(() => {
     if (!weatherEnabled) return;
     const keys = Object.entries(SUBSTATIONS).filter(([k, s]) => !s.hidden && (!substationKeys || substationKeys.includes(k))).map(([k, s]) => ({ key: k, lat: s.lat, lon: s.lon }));
@@ -1231,7 +1313,7 @@ function GridMap({
       setDownloading(false);
     }
   }, [downloadName]);
-  return /* @__PURE__ */ React.createElement("div", { className: "gridmap-wrap", style: { height } }, /* @__PURE__ */ React.createElement("div", { ref: containerRef, className: "gridmap-canvas" }), /* @__PURE__ */ React.createElement("div", { className: "map-controls" }, /* @__PURE__ */ React.createElement("div", { className: "layer-switch" }, ["normal", "hybrid", "satellite"].map((m) => /* @__PURE__ */ React.createElement("button", { key: m, className: mode === m ? "active" : "", onClick: () => setMode(m) }, m === "normal" ? "Map" : m === "hybrid" ? "Hybrid" : "Satellite"))), /* @__PURE__ */ React.createElement("button", { className: "layer-switch-single" + (showTowerNumbers ? " active" : ""), onClick: () => setShowTowerNumbers(!showTowerNumbers), title: "Tower numbers show once you zoom in close" }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"), /* @__PURE__ */ React.createElement("button", { className: "layer-switch-single" + (showLineNames ? " active" : ""), onClick: () => setShowLineNames(!showLineNames), title: "Show line name labels on the map" }, showLineNames ? "\u2713 Line names" : "Line names off"), /* @__PURE__ */ React.createElement("div", { className: "zoom-readout", title: "Map zoom level" }, "Zoom ", Math.round((mapZoom / 19) * 100), "% (L", mapZoom, ")"), mode === "hybrid" && /* @__PURE__ */ React.createElement("div", { className: "opacity-slider" }, /* @__PURE__ */ React.createElement("span", null, "Satellite opacity"), /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "gridmap-wrap", style: { height } }, /* @__PURE__ */ React.createElement("div", { ref: containerRef, className: "gridmap-canvas" }), /* @__PURE__ */ React.createElement("div", { className: "map-controls" }, /* @__PURE__ */ React.createElement("div", { className: "layer-switch" }, ["normal", "hybrid", "satellite"].map((m) => /* @__PURE__ */ React.createElement("button", { key: m, className: mode === m ? "active" : "", onClick: () => setMode(m) }, m === "normal" ? "Map" : m === "hybrid" ? "Hybrid" : "Satellite"))), /* @__PURE__ */ React.createElement("button", { className: "layer-switch-single" + (showTowerNumbers ? " active" : ""), onClick: () => setShowTowerNumbers(!showTowerNumbers), title: "Tower numbers show once you zoom in close" }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"), /* @__PURE__ */ React.createElement("label", { className: "switch-toggle" + (showLineNames ? " on" : ""), title: "Show line name labels on the map" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: showLineNames, onChange: () => setShowLineNames(!showLineNames), style: { display: "none" } }), /* @__PURE__ */ React.createElement("span", { className: "switch-track" }, /* @__PURE__ */ React.createElement("span", { className: "switch-thumb" })), "Display Line Names"), /* @__PURE__ */ React.createElement("div", { className: "zoom-readout", title: "Map zoom level" }, "Zoom ", Math.round((mapZoom / 19) * 100), "% (L", mapZoom, ")"), mode === "hybrid" && /* @__PURE__ */ React.createElement("div", { className: "opacity-slider" }, /* @__PURE__ */ React.createElement("span", null, "Satellite opacity"), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "range",
@@ -1372,7 +1454,7 @@ function LmsdPage() {
   const [loading, setLoading] = useState(false);
   const [editingLine, setEditingLine] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [selectedDivision, setSelectedDivision] = useState(null);
+  const [selectedCorridor, setSelectedCorridor] = useState(null);
   const [activeLayers, setActiveLayers] = useState({});
   const [colorVersion, setColorVersion] = useState(0);
   useEffect(() => {
@@ -1436,11 +1518,21 @@ function LmsdPage() {
     setDivisionColorOverride(name, color);
     setColorVersion((v) => v + 1);
   }
-  const divisionInfo = useMemo(() => {
-    if (!selectedDivision) return null;
-    const matching = lines.filter((j) => j.segments.some((s) => s.division === selectedDivision));
-    return { name: selectedDivision, matching };
-  }, [selectedDivision, lines]);
+  const selectedInfo = useMemo(() => {
+    if (!selectedCorridor) return null;
+    const entry = lines.find((l) => l.line === selectedCorridor.line);
+    if (!entry) return null;
+    const idx = entry.segments.findIndex((s) => s.division === selectedCorridor.division);
+    const seg = idx >= 0 ? entry.segments[idx] : null;
+    const segTeamAligned = entry.segments.length === entry.teams.length;
+    const team = seg && segTeamAligned ? entry.teams[idx] : null;
+    const officers = team ? team.members : entry.teams.flatMap((t) => t.members);
+    return {
+      ...selectedCorridor,
+      chainage: seg ? seg.chainage : selectedCorridor.chainage,
+      officers
+    };
+  }, [selectedCorridor, lines]);
   const lmsdGroups = useMemo(() => {
     const map = {};
     lines.forEach((line) => {
@@ -1471,26 +1563,44 @@ function LmsdPage() {
         colorVersion,
         extraLayers,
         showKm: true,
-        onSelect: (k, type) => type === "zone" && setSelectedDivision(k),
+        highlightCorridorId: selectedCorridor ? selectedCorridor.id : null,
+        onSelect: (payload, type) => type === "corridor" && setSelectedCorridor(payload),
         height: "72vh",
         downloadName: "karjat-lmsd-map"
       }),
       React.createElement("aside", { className: "side-panel" },
-        !divisionInfo
-          ? React.createElement("div", { className: "empty-hint" }, "Hover or click a coloured corridor stretch on the map to see its responsible LMSD office and officers here.")
+        !selectedInfo
+          ? React.createElement("div", { className: "empty-hint" }, "Click a coloured corridor stretch on the map to see its responsible LMSD office, officers, and the distance from each end at that point.")
           : React.createElement("div", null,
-              React.createElement("h3", null, divisionInfo.name),
-              divisionInfo.matching.map((line) => React.createElement("div", { key: line.line, className: "jur-card" },
-                React.createElement("div", { className: "jur-line-name" }, line.line),
-                line.teams.flatMap((t) => t.members).map((m, i) => React.createElement("div", { key: i, className: "jur-officer" },
-                  React.createElement(User, { size: 13 }), " ", m.name, " ", React.createElement("span", { className: "muted" }, "\u00b7 ", m.post),
-                  React.createElement("div", { className: "jur-mobile-actions" },
-                    React.createElement("a", { className: "contact-btn", href: `tel:${m.mobile}` }, React.createElement(Phone, { size: 12 }), " Call"),
-                    React.createElement("a", { className: "contact-btn whatsapp", href: `https://wa.me/91${m.mobile}`, target: "_blank", rel: "noreferrer" }, "WhatsApp"),
-                    React.createElement("span", { className: "mono" }, m.mobile)
-                  )
-                ))
-              ))
+              React.createElement("div", { className: "side-panel-close-row" },
+                React.createElement("h3", null, selectedInfo.division),
+                React.createElement("button", { className: "side-panel-clear", onClick: () => setSelectedCorridor(null), title: "Clear selection" }, "\u2715")
+              ),
+              React.createElement("div", { className: "jur-card" },
+                React.createElement("div", { className: "jur-line-name" }, selectedInfo.line),
+                React.createElement("div", { className: "jur-chainage" }, "Chainage: ", selectedInfo.chainage),
+                React.createElement("div", { className: "jur-distances" },
+                  React.createElement("div", { className: "jur-distance-row" },
+                    React.createElement("span", { className: "muted" }, "From ", selectedInfo.karjatEndName, ":"),
+                    React.createElement("span", { className: "mono" }, selectedInfo.kmFromKarjat, " km")
+                  ),
+                  React.createElement("div", { className: "jur-distance-row" },
+                    React.createElement("span", { className: "muted" }, "From ", selectedInfo.otherEndName, ":"),
+                    React.createElement("span", { className: "mono" }, selectedInfo.kmFromOther, " km")
+                  ),
+                  React.createElement("div", { className: "jur-distance-row muted-small" }, "Total line length: ", selectedInfo.totalKm, " km")
+                ),
+                selectedInfo.officers.length === 0
+                  ? React.createElement("div", { className: "muted" }, "No officer assigned yet")
+                  : selectedInfo.officers.map((m, i) => React.createElement("div", { key: i, className: "jur-officer" },
+                      React.createElement(User, { size: 13 }), " ", m.name, " ", React.createElement("span", { className: "muted" }, "\u00b7 ", m.post),
+                      React.createElement("div", { className: "jur-mobile-actions" },
+                        React.createElement("a", { className: "contact-btn", href: `tel:${m.mobile}` }, React.createElement(Phone, { size: 12 }), " Call"),
+                        React.createElement("a", { className: "contact-btn whatsapp", href: `https://wa.me/91${m.mobile}`, target: "_blank", rel: "noreferrer" }, "WhatsApp"),
+                        React.createElement("span", { className: "mono" }, m.mobile)
+                      )
+                    ))
+              )
             )
       )
     ),
