@@ -1,370 +1,165 @@
-/**
- * ============================================================================
- *  400 kV KARJAT — LMSD TEAM DATABASE (Google Apps Script backend)
- * ============================================================================
- *  What this does
- *  --------------
- *  1. On first run (INIT_) it creates a Google Sheet ("Karjat_LMSD_Database")
- *     inside a Drive folder ("Karjat_400kV_Portal"), with one tab per line,
- *     and auto-populates it with the jurisdiction data you already gave me.
- *  2. Exposes a small JSON API (doGet / doPost) so the static website can:
- *       - action=getData      -> read all lines + teams + members
- *       - action=saveTeams    -> overwrite the teams for one line (validated:
- *                                 max 5 teams/line, 1-5 members/team)
- *       - action=init         -> (re)build the sheet from scratch
- *
- *  DEPLOY STEPS (do this once)
- *  ----------------------------
- *  1. Go to https://script.google.com -> New project. Paste this whole file
- *     in as Code.gs (replace the default content).
- *  2. Click Deploy -> New deployment -> type: "Web app".
- *       - Execute as: Me
- *       - Who has access: Anyone  (or "Anyone with Google account" if you
- *         want to restrict edits to your org)
- *  3. Click Deploy, authorize the permissions it asks for.
- *  4. Copy the Web App URL it gives you (ends in /exec).
- *  5. Paste that URL into `data.js` in the website files, where it says
- *         const APPS_SCRIPT_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
- *  6. Open the deployed URL once in your browser with ?action=init at the
- *     end (e.g. https://script.google.com/macros/s/XXXX/exec?action=init)
- *     to create and auto-populate the spreadsheet the first time.
- * ============================================================================
- */
+# 400 kV Karjat Grid Portal
 
-const FOLDER_NAME = "Karjat_400kV_Portal";
-const SHEET_NAME = "Karjat_LMSD_Database";
+A static, zero-build React site (React + Babel loaded via CDN, so there's no
+`npm install` / build step — just push and enable GitHub Pages) covering:
 
-// ---- Seed data: exactly what you gave me, used to auto-populate on init ----
-const SEED_LINES = [
-  {
-    line: "400 kV Karjat - Girawali Line 1 & 2",
-    length: "214.6 km",
-    segments: [
-      { chainage: "0-37 km", division: "LMSD Lonikand" },
-      { chainage: "37-87 km", division: "400 kV LMSD Lamboti" },
-      { chainage: "87-214.6 km", division: "LMSD Girwali" },
-    ],
-    teams: [
-      { teamName: "Team 1", members: [{ name: "Aishwarya Kirtane", post: "AEE", mobile: "9922364856" }] },
-      { teamName: "Team 2", members: [{ name: "Shri Nadgire", post: "DyCT", mobile: "9850704944" }] },
-      { teamName: "Team 3", members: [{ name: "Nagesh Saray", post: "AE", mobile: "8554994942" }] },
-    ],
-  },
-  {
-    line: "400 kV Karjat - Lonikand Line 1 & 2",
-    length: "85.4 km",
-    segments: [{ chainage: "0-85.4 km", division: "LMSD Lonikand" }],
-    teams: [
-      { teamName: "Team 1", members: [{ name: "Aishwarya Kirtane", post: "AEE", mobile: "9922364856" }] },
-    ],
-  },
-  {
-    line: "400/765 kV Karjat - Pune East Line 1 (planned)",
-    length: "~50 km D/C",
-    segments: [{ chainage: "0-50 km", division: "POWERGRID (to be assigned)" }],
-    teams: [],
-  },
-  {
-    line: "220 kV Karjat - Ahilyanagar Line 1",
-    length: "79.6 km",
-    segments: [{ chainage: "0-79.6 km", division: "LMSD Kedgaon" }],
-    teams: [
-      {
-        teamName: "Team 1",
-        members: [
-          { name: "Kishor Katore", post: "AEE", mobile: "9762430884" },
-          { name: "Kailash Patil", post: "DyEE", mobile: "7030831440" },
-        ],
-      },
-    ],
-  },
-  {
-    line: "220 kV Karjat - Belwandi Line 1",
-    length: "40.7 km",
-    segments: [{ chainage: "0-40.7 km", division: "LMSD Kedgaon" }],
-    teams: [
-      {
-        teamName: "Team 1",
-        members: [
-          { name: "Kishor Katore", post: "AEE", mobile: "9762430884" },
-          { name: "Kailash Patil", post: "DyEE", mobile: "7030831440" },
-        ],
-      },
-    ],
-  },
-  {
-    line: "220 kV Karjat - Bhigwan Line 1",
-    length: "19.84 km",
-    segments: [{ chainage: "0-19.84 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
-  },
-  {
-    line: "220 kV Karjat - Shirsuphal Line 1",
-    length: "19.84 km",
-    segments: [{ chainage: "0-19.84 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
-  },
-  {
-    line: "220 kV Karjat - Jeur Line 1",
-    length: "50.69 km",
-    segments: [{ chainage: "0-50.69 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
-  },
-  {
-    line: "220 kV Karjat - Jeur Line 2",
-    length: "50.69 km",
-    segments: [{ chainage: "0-50.69 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }],
-  },
-];
+1. **Home** — full-scale map, Map/Hybrid/Satellite layers (adjustable satellite
+   opacity in Hybrid mode), live weather badges, PDF export of current view.
+2. **LMSD Map** — same map with LMSD jurisdiction zones shaded, km markers
+   along each line, click/hover a zone for its responsible office + officers.
+3. **Maintenance** — full line-by-line contact directory.
+4. **Coordinates** — every substation's lat/lon in one table.
+5. **Statewide** — the wider 400kV/220kV network from your uploaded diagrams.
+6. **Weather** — tab per substation, current + hourly + 16-day forecast,
+   background/animation changes with conditions (sun/cloud/rain/storm), plus
+   an all-substations map with live weather badges.
+7. **LMSD Teams** — editable team roster (max 5 teams/line, 1–5 people/team),
+   backed by a Google Sheet via Apps Script.
 
-const MAX_TEAMS_PER_LINE = 5;
-const MAX_MEMBERS_PER_TEAM = 5;
-const MIN_MEMBERS_PER_TEAM = 1;
+## Deploy to GitHub Pages
 
-function getOrCreateFolder_() {
-  const it = DriveApp.getFoldersByName(FOLDER_NAME);
-  return it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER_NAME);
-}
+1. Create a new GitHub repo, push all these files to the root (or to `/docs`
+   and point Pages at that folder).
+2. Repo Settings → Pages → Source: deploy from branch, folder `/ (root)`.
+3. Done — your site will be live at `https://<username>.github.io/<repo>/`.
 
-function getOrCreateSpreadsheet_() {
-  const folder = getOrCreateFolder_();
-  const files = folder.getFilesByName(SHEET_NAME);
-  if (files.hasNext()) {
-    return SpreadsheetApp.open(files.next());
-  }
-  const ss = SpreadsheetApp.create(SHEET_NAME);
-  const file = DriveApp.getFileById(ss.getId());
-  folder.addFile(file);
-  DriveApp.getRootFolder().removeFile(file); // keep it only inside our folder
-  return ss;
-}
+No build tooling, no `package.json` needed — `index.html` loads React,
+Babel (for in-browser JSX), and Leaflet straight from CDNs.
 
-function sheetNameForLine_(lineName) {
-  // Sheet tab names max 100 chars & can't contain []*?/\:
-  return lineName.replace(/[\[\]\*\?\/\\:]/g, "").substring(0, 90);
-}
+## NEW: Print Maps (`#/printmaps`)
 
-function INIT_() {
-  const ss = getOrCreateSpreadsheet_();
+Four A4-ready diagrams, one per tab:
 
-  // Remove default blank sheet if present and unused
-  const defaultSheet = ss.getSheetByName("Sheet1");
+1. **400 kV — Karjat network** — every 400/765 kV bus and line reached from
+   400 kV Karjat SS (Lonikand I & II, Girawali, the planned Pune East tie).
+2. **220 kV — Karjat network** — every 220 kV bus/line reached from Karjat
+   (Ahilyanagar, Bhose/Belwandi, Bhigwan, Shirsuphal, Jeur).
+3. **Overall 400 kV** — the full statewide 400/765 kV picture, with Karjat's
+   own lines drawn bold/full-colour and every other utility's line drawn thin
+   and dimmed, so Karjat's network still reads clearly against the wider grid.
+4. **Overall 220 kV** — same idea, statewide 220 kV.
 
-  SEED_LINES.forEach((lineObj) => {
-    const tabName = sheetNameForLine_(lineObj.line);
-    let sheet = ss.getSheetByName(tabName);
-    if (!sheet) sheet = ss.insertSheet(tabName);
-    sheet.clear();
+Each tab has:
+- A **Portrait/Landscape** toggle sized to true A4 (210×297mm).
+- A light lat/lon **coordinate graticule** overlaid on the map for a
+  surveyed-diagram feel.
+- An **LMSD responsibility table** underneath, listing each Karjat line's
+  chainage and assigned division — pulled live from the same Sheet as the
+  Maintenance Directory.
+- **Print** (opens your browser's print dialog, pre-sized to the sheet) and
+  **Download PDF** (renders the sheet to a true A4 PDF) buttons.
 
-    sheet.getRange(1, 1, 1, 2).setValues([["Line", lineObj.line]]).setFontWeight("bold");
-    sheet.getRange(2, 1, 1, 2).setValues([["Length", lineObj.length]]);
+Note: since GitHub Pages' satellite/hybrid tiles sometimes block canvas
+export over CORS, if "Download PDF" ever fails, the Print button's browser
+"Save as PDF" is the reliable fallback — it always works because it's a real
+print, not a canvas screenshot.
 
-    let row = 4;
-    sheet.getRange(row, 1, 1, 2).setValues([["Chainage", "Division"]]).setFontWeight("bold");
-    row++;
-    lineObj.segments.forEach((seg) => {
-      sheet.getRange(row, 1, 1, 2).setValues([[seg.chainage, seg.division]]);
-      row++;
-    });
+## NEW: Line & Substation Editor (`#/editor`)
 
-    row += 1;
-    const headerRow = row;
-    sheet.getRange(row, 1, 1, 5).setValues([["Team", "Member #", "Name", "Post", "Mobile"]]).setFontWeight("bold");
-    row++;
-    lineObj.teams.forEach((team) => {
-      team.members.forEach((m, i) => {
-        sheet.getRange(row, 1, 1, 5).setValues([[team.teamName, i + 1, m.name, m.post, m.mobile]]);
-        row++;
-      });
-    });
+A full editing page has been added:
 
-    sheet.autoResizeColumns(1, 5);
-    sheet.setFrozenRows(headerRow);
-  });
+- **Move substations** — toggle "Move substations" on, then drag any dot to
+  its real spot (switch to Satellite/Hybrid layer first for accuracy). Any
+  line attached to that substation automatically snaps its endpoint along
+  with it, so you never get a gap.
+- **Trace real line routes** — click a line in the right-hand list to select
+  it (it highlights on the map), click **"+ Add tower point"**, then click
+  along the satellite imagery to lay down tower/route points one by one —
+  each click inserts the point at the correct place along the line, even if
+  you click out of order. Drag any existing point to nudge it; right-click a
+  point to delete it.
+- **Draw brand-new lines** — "+ Draw new line", pick the From/To substations,
+  a colour and kV class, then click points on the map and hit "Finish line".
+- **Add/delete substations** — "+ Add substation", give it a name, then click
+  the map to place it. Delete any substation from the list (it warns you and
+  offers to remove dependent lines too).
+- **Colour** — every line has its own colour swatch/picker in the side panel,
+  independent of the default kV colour.
+- **Saving** — "Save changes" always saves into this browser (localStorage)
+  immediately. If you've connected the Google Sheet (see below), it also
+  pushes the same JSON to a new `Geometry` tab in your sheet, so edits show
+  up on every device instead of just the one you edited on. "Export JSON" /
+  "Import JSON" give you an offline backup/transfer file either way.
+- Once saved, every other page (LMSD map, Statewide map, Coordinates,
+  Weather, Maintenance) automatically reads the corrected positions/paths the
+  next time you open them — no separate step needed.
 
-  if (defaultSheet && ss.getSheets().length > 1) {
-    ss.deleteSheet(defaultSheet);
-  }
+### Coordinates double-checked in this pass
 
-  return ss.getUrl();
-}
+`400 kV BBLR` was corrected from a rough placeholder to the verified real
+site — it's actually **400 kV Babhleshwar SS, Tal. Rahata (near Shirdi/Loni),
+Ahmednagar district** at 19.6203°N 74.4914°E, not down near Osmanabad as the
+old placeholder had it. `400 kV Kalamb` was tightened to the Kalamb taluka
+centre (Dharashiv district). The remaining substations still flagged
+`approx: true` are close (taluka/town-level) but worth a final drag-correction
+pass in the new Editor once you're looking at satellite imagery — that's
+exactly what the tool is for.
 
-function readLineFromSheet_(sheet) {
-  const data = sheet.getDataRange().getValues();
-  const lineName = data[0][1];
-  const length = data[1][1];
+## Connect the Google Sheet (LMSD Teams page)
 
-  const segments = [];
-  let r = 4; // 0-indexed row 4 = "Chainage/Division" header
-  r++; // move past header
-  while (r < data.length && data[r][0] && data[r][0] !== "Team") {
-    segments.push({ chainage: data[r][0], division: data[r][1] });
-    r++;
-  }
+1. Open `code.gs` — follow the deployment steps written at the top of that
+   file (create an Apps Script project, paste the code, Deploy → Web app).
+2. Visit your deployed web app URL once with `?action=init` appended, to
+   create and auto-populate the spreadsheet.
+3. Open `data.js`, find this line near the top:
+   ```js
+   const APPS_SCRIPT_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+   ```
+   Replace the placeholder with your `.../exec` URL and commit.
+4. The **LMSD Teams** page will now read/write live to your Sheet. Until you
+   do this, that page runs in local preview mode (edits aren't persisted).
 
-  // find the "Team" header row
-  while (r < data.length && data[r][0] !== "Team") r++;
-  r++; // past header
+## Files
 
-  const teamsMap = {};
-  const teamOrder = [];
-  for (; r < data.length; r++) {
-    const row = data[r];
-    if (!row[0]) continue;
-    const teamName = String(row[0]);
-    if (!teamsMap[teamName]) {
-      teamsMap[teamName] = [];
-      teamOrder.push(teamName);
-    }
-    teamsMap[teamName].push({ name: row[2], post: row[3], mobile: String(row[4]) });
-  }
-  const teams = teamOrder.map((t) => ({ teamName: t, members: teamsMap[t] }));
+Just two files now:
 
-  return { line: lineName, length: length, segments: segments, teams: teams };
-}
+| File | Purpose |
+|---|---|
+| `index.html` | Everything — CSS, data, weather helper, map engine, all 7 pages, app shell. One merged JSX bundle transformed in-browser by Babel. |
+| `code.gs` | Google Apps Script backend (Sheet-as-database) — deployed separately at script.google.com, not part of the website files. |
 
-function getAllData_() {
-  const ss = getOrCreateSpreadsheet_();
-  const sheets = ss.getSheets();
-  if (sheets.length === 0 || (sheets.length === 1 && sheets[0].getName() === "Sheet1")) {
-    INIT_();
-  }
-  const fresh = getOrCreateSpreadsheet_();
-  return fresh
-    .getSheets()
-    .filter((s) => s.getLastRow() > 0)
-    .map(readLineFromSheet_);
-}
+### Why this was merged into one file
 
-function saveTeamsForLine_(lineName, teams) {
-  if (!Array.isArray(teams) || teams.length > MAX_TEAMS_PER_LINE) {
-    throw new Error("A line can have at most " + MAX_TEAMS_PER_LINE + " teams.");
-  }
-  teams.forEach((t) => {
-    if (!t.members || t.members.length < MIN_MEMBERS_PER_TEAM || t.members.length > MAX_MEMBERS_PER_TEAM) {
-      throw new Error(
-        "Each team needs between " + MIN_MEMBERS_PER_TEAM + " and " + MAX_MEMBERS_PER_TEAM + " members."
-      );
-    }
-  });
+The first version split the code across 5 separate `<script type="text/babel">`
+files. Browsers share **one global scope** across classic `<script>` tags, and
+each file had its own `const { useState, useEffect, ... } = React;` at the top.
+The second file to run threw `SyntaxError: Identifier 'useState' has already
+been declared`, which silently aborted everything after it — including the
+final `ReactDOM.createRoot().render()` call. That's what produced the blank
+page. Merging into one script (with the hook destructuring done exactly once)
+fixes this at the root cause, not just cosmetically.
 
-  const ss = getOrCreateSpreadsheet_();
-  const tabName = sheetNameForLine_(lineName);
-  const sheet = ss.getSheetByName(tabName);
-  if (!sheet) throw new Error("Line not found: " + lineName);
+The merged `index.html` also now shows a visible error message in the page
+itself (not just the console) if anything else throws during startup, so any
+future issue won't be a silent blank screen.
 
-  const existing = readLineFromSheet_(sheet);
+Where to find your Apps Script URL setting: search `index.html` for
+`APPS_SCRIPT_URL` (near the top of the inlined script block).
 
-  sheet.clear();
-  sheet.getRange(1, 1, 1, 2).setValues([["Line", existing.line]]).setFontWeight("bold");
-  sheet.getRange(2, 1, 1, 2).setValues([["Length", existing.length]]);
+## Honest scope notes — please read before relying on this
 
-  let row = 4;
-  sheet.getRange(row, 1, 1, 2).setValues([["Chainage", "Division"]]).setFontWeight("bold");
-  row++;
-  existing.segments.forEach((seg) => {
-    sheet.getRange(row, 1, 1, 2).setValues([[seg.chainage, seg.division]]);
-    row++;
-  });
-
-  row += 1;
-  const headerRow = row;
-  sheet.getRange(row, 1, 1, 5).setValues([["Team", "Member #", "Name", "Post", "Mobile"]]).setFontWeight("bold");
-  row++;
-  teams.forEach((team) => {
-    team.members.forEach((m, i) => {
-      sheet.getRange(row, 1, 1, 5).setValues([[team.teamName, i + 1, m.name, m.post, m.mobile]]);
-      row++;
-    });
-  });
-  sheet.autoResizeColumns(1, 5);
-  sheet.setFrozenRows(headerRow);
-
-  return readLineFromSheet_(sheet);
-}
-
-// ---- Line/Substation Editor geometry storage (single JSON blob per save) ----
-const GEOMETRY_SHEET_NAME = "Geometry";
-
-function getGeometrySheet_() {
-  const ss = getOrCreateSpreadsheet_();
-  let sheet = ss.getSheetByName(GEOMETRY_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(GEOMETRY_SHEET_NAME);
-    sheet.getRange(1, 1, 1, 2).setValues([["Saved at", "Geometry JSON"]]).setFontWeight("bold");
-  }
-  return sheet;
-}
-
-function getGeometry_() {
-  const sheet = getGeometrySheet_();
-  if (sheet.getLastRow() < 2) return null;
-  const json = sheet.getRange(sheet.getLastRow(), 2).getValue();
-  if (!json) return null;
-  try {
-    return JSON.parse(json);
-  } catch (e) {
-    return null;
-  }
-}
-
-function saveGeometry_(geometry) {
-  if (!geometry || !geometry.subs || !geometry.lines) {
-    throw new Error("Geometry must include both 'subs' and 'lines'.");
-  }
-  const sheet = getGeometrySheet_();
-  // Keep just one row (the latest save) so the sheet doesn't grow forever.
-  if (sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1);
-  sheet.getRange(2, 1, 1, 2).setValues([[new Date().toISOString(), JSON.stringify(geometry)]]);
-  return geometry;
-}
-
-function jsonOut_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
-}
-
-function doGet(e) {
-  // Note: if you click "Run" on this function directly in the Apps Script
-  // editor, `e` is undefined (there's no real web request) — that's the
-  // "Cannot read properties of undefined (reading 'parameter')" error.
-  // This is expected; test the deployed .../exec URL in a browser instead.
-  const params = (e && e.parameter) || {};
-  const action = (params.action || "getData").toLowerCase();
-  try {
-    if (action === "init") {
-      const url = INIT_();
-      return jsonOut_({ ok: true, message: "Initialized", sheetUrl: url });
-    }
-    if (action === "getdata") {
-      return jsonOut_({ ok: true, lines: getAllData_() });
-    }
-    if (action === "getgeometry") {
-      return jsonOut_({ ok: true, geometry: getGeometry_() });
-    }
-    return jsonOut_({ ok: false, error: "Unknown action: " + action });
-  } catch (err) {
-    return jsonOut_({ ok: false, error: String(err) });
-  }
-}
-
-function doPost(e) {
-  try {
-    if (!e || !e.postData) {
-      return jsonOut_({ ok: false, error: "No request body \u2014 doPost must be called via the deployed web app URL, not run manually." });
-    }
-    const body = JSON.parse(e.postData.contents);
-    const action = (body.action || "").toLowerCase();
-    if (action === "saveteams") {
-      const result = saveTeamsForLine_(body.line, body.teams);
-      return jsonOut_({ ok: true, line: result });
-    }
-    if (action === "savegeometry") {
-      const result = saveGeometry_(body.geometry);
-      return jsonOut_({ ok: true, geometry: result });
-    }
-    return jsonOut_({ ok: false, error: "Unknown action: " + action });
-  } catch (err) {
-    return jsonOut_({ ok: false, error: String(err) });
-  }
-}
+- **Line paths are illustrative**, built from the line lengths, LILO points,
+  and bearings you gave me — not surveyed tower/GPS coordinates. Several
+  statewide-network substations (marked `approx: true` in `data.js`) use a
+  nearby town/taluka center as a stand-in because I couldn't find an exact
+  site pin — worth double-checking against MSETCL's own records before this
+  goes anywhere official.
+- **Satellite tiles** are Esri World Imagery (free, no API key) rather than
+  Google's own satellite layer — visually very similar, but if you specifically
+  need Google's tiles you'd need a Google Maps API key and a small swap in
+  `mapEngine.js`.
+- **PDF export** uses `html2canvas`, which can occasionally fail to capture
+  map tiles if a tile provider's CORS headers are strict in a given browser —
+  I've added `crossOrigin` flags to reduce this, and the UI falls back to
+  suggesting your browser's Print → Save as PDF if the export throws.
+- **Weather** is real, live data (Open-Meteo, no key required) — but the
+  rain/sun/cloud page background is a CSS/animation approximation of mood,
+  not a literal radar rendering.
+- **"Google Earth-like"**: this uses Leaflet (2D, open-source, no key) with
+  satellite/hybrid/map layers and full zoom — genuinely close to Google Maps'
+  UX, but it isn't a tilting 3D globe. If true 3D is important, that would
+  mean swapping in Cesium or Google's own 3D Maps JS API (needs a billed
+  Google Cloud key), which I didn't want to assume you wanted without asking.
+- The historic Ahilyanagar–Belwandi circuit cut is used only to shape the
+  double-circuit corridor visually, per your instruction — it isn't labeled
+  anywhere in the UI.
