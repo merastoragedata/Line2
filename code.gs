@@ -145,43 +145,46 @@ function sheetNameForLine_(lineName) {
   return lineName.replace(/[\[\]\*\?\/\\:]/g, "").substring(0, 90);
 }
 
+function seedLineSheet_(ss, lineObj) {
+  const tabName = sheetNameForLine_(lineObj.line);
+  let sheet = ss.getSheetByName(tabName);
+  if (!sheet) sheet = ss.insertSheet(tabName);
+  sheet.clear();
+
+  sheet.getRange(1, 1, 1, 2).setValues([["Line", lineObj.line]]).setFontWeight("bold");
+  sheet.getRange(2, 1, 1, 2).setValues([["Length", lineObj.length]]);
+
+  let row = 4;
+  sheet.getRange(row, 1, 1, 2).setValues([["Chainage", "Division"]]).setFontWeight("bold");
+  row++;
+  lineObj.segments.forEach((seg) => {
+    sheet.getRange(row, 1, 1, 2).setValues([[seg.chainage, seg.division]]);
+    row++;
+  });
+
+  row += 1;
+  const headerRow = row;
+  sheet.getRange(row, 1, 1, 5).setValues([["Team", "Member #", "Name", "Post", "Mobile"]]).setFontWeight("bold");
+  row++;
+  lineObj.teams.forEach((team) => {
+    team.members.forEach((m, i) => {
+      sheet.getRange(row, 1, 1, 5).setValues([[team.teamName, i + 1, m.name, m.post, m.mobile]]);
+      row++;
+    });
+  });
+
+  sheet.autoResizeColumns(1, 5);
+  sheet.setFrozenRows(headerRow);
+  return sheet;
+}
+
 function INIT_() {
   const ss = getOrCreateSpreadsheet_();
 
   // Remove default blank sheet if present and unused
   const defaultSheet = ss.getSheetByName("Sheet1");
 
-  SEED_LINES.forEach((lineObj) => {
-    const tabName = sheetNameForLine_(lineObj.line);
-    let sheet = ss.getSheetByName(tabName);
-    if (!sheet) sheet = ss.insertSheet(tabName);
-    sheet.clear();
-
-    sheet.getRange(1, 1, 1, 2).setValues([["Line", lineObj.line]]).setFontWeight("bold");
-    sheet.getRange(2, 1, 1, 2).setValues([["Length", lineObj.length]]);
-
-    let row = 4;
-    sheet.getRange(row, 1, 1, 2).setValues([["Chainage", "Division"]]).setFontWeight("bold");
-    row++;
-    lineObj.segments.forEach((seg) => {
-      sheet.getRange(row, 1, 1, 2).setValues([[seg.chainage, seg.division]]);
-      row++;
-    });
-
-    row += 1;
-    const headerRow = row;
-    sheet.getRange(row, 1, 1, 5).setValues([["Team", "Member #", "Name", "Post", "Mobile"]]).setFontWeight("bold");
-    row++;
-    lineObj.teams.forEach((team) => {
-      team.members.forEach((m, i) => {
-        sheet.getRange(row, 1, 1, 5).setValues([[team.teamName, i + 1, m.name, m.post, m.mobile]]);
-        row++;
-      });
-    });
-
-    sheet.autoResizeColumns(1, 5);
-    sheet.setFrozenRows(headerRow);
-  });
+  SEED_LINES.forEach((lineObj) => seedLineSheet_(ss, lineObj));
 
   if (defaultSheet && ss.getSheets().length > 1) {
     ss.deleteSheet(defaultSheet);
@@ -251,8 +254,16 @@ function saveTeamsForLine_(lineName, teams) {
 
   const ss = getOrCreateSpreadsheet_();
   const tabName = sheetNameForLine_(lineName);
-  const sheet = ss.getSheetByName(tabName);
-  if (!sheet) throw new Error("Line not found: " + lineName);
+  let sheet = ss.getSheetByName(tabName);
+  if (!sheet) {
+    // Spreadsheet was never (fully) initialized for this line \u2014 e.g. a save
+    // happened before any page ever did a GET, or this line was added to
+    // SEED_LINES after the sheet was first set up. Seed it now instead of
+    // failing the save outright.
+    const seedObj = SEED_LINES.find((l) => l.line === lineName);
+    if (!seedObj) throw new Error("Line not found: " + lineName);
+    sheet = seedLineSheet_(ss, seedObj);
+  }
 
   const existing = readLineFromSheet_(sheet);
 
