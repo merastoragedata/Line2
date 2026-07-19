@@ -88,7 +88,14 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .lmsd-tabs { display: flex; gap: 8px; margin: 4px 0 16px; }
 .lmsd-tab { background: var(--panel2); border: 1px solid var(--border); color: var(--ink-muted); border-radius: 999px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
 .lmsd-tab.active { background: rgba(66,214,200,0.14); border-color: var(--cyan); color: var(--cyan); font-weight: 600; }
-.map-toprow-controls { display: flex; gap: 10px; margin-bottom: 10px; }
+.map-toprow-controls { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+.checkbox-toggle { display: inline-flex; align-items: center; gap: 7px; background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 12px; color: var(--ink); cursor: pointer; }
+.checkbox-toggle input { accent-color: var(--cyan); width: 15px; height: 15px; cursor: pointer; }
+.adjust-highlight-wrap { position: relative; }
+.adjust-highlight-popover { position: absolute; top: calc(100% + 6px); left: 0; z-index: 50; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; width: 240px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.adjust-highlight-popover .trace-field { width: 100%; }
+.adjust-highlight-popover input[type=range] { width: 100%; accent-color: var(--cyan); }
+.adjust-highlight-hint { font-size: 10.5px; color: var(--ink-muted); }
 .trace-tool { display: flex; flex-direction: column; gap: 14px; }
 .trace-controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
 .trace-field { display: flex; flex-direction: column; gap: 5px; font-size: 11.5px; color: var(--ink-muted); font-family: "JetBrains Mono"; }
@@ -109,6 +116,9 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .side-panel-close-row { display: flex; justify-content: space-between; align-items: center; }
 .side-panel-clear { background: none; border: 1px solid var(--border); color: var(--ink-muted); border-radius: 6px; width: 24px; height: 24px; cursor: pointer; font-size: 12px; }
 .jur-distances { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin: 6px 0 10px; }
+.line-length-hero { display: flex; align-items: baseline; gap: 6px; background: linear-gradient(135deg, rgba(66,214,200,0.16), rgba(66,214,200,0.04)); border: 1px solid var(--cyan); border-radius: 10px; padding: 10px 14px; margin: 4px 0 10px; }
+.line-length-value { font-family: "JetBrains Mono"; font-size: 26px; font-weight: 800; color: var(--cyan); line-height: 1; }
+.line-length-unit { font-size: 12px; color: var(--ink-muted); font-weight: 600; }
 .jur-distance-row { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
 .jur-distance-row.muted-small { color: var(--ink-muted); font-size: 11px; border-top: 1px dashed var(--border); margin-top: 4px; padding-top: 5px; justify-content: flex-start; gap: 5px; }
 .jur-mobile { font-family: "JetBrains Mono"; font-size: 11.5px; padding-left: 20px; color: var(--cyan); }
@@ -132,6 +142,8 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .lmsd-directory-row { border-top: 1px solid var(--border); padding: 8px 0; }
 .lmsd-directory-row:first-of-type { border-top: none; padding-top: 0; }
 .lmsd-directory-line { font-size: 12px; color: var(--ink-muted); margin-bottom: 4px; }
+.lmsd-directory-lines-covered { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; padding-left: 19px; }
+.line-chip { font-size: 10.5px; color: var(--ink-muted); background: var(--panel2); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; font-family: "JetBrains Mono"; }
 .lmsd-layer-toggles { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 18px 0; padding: 12px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); }
 .lmsd-layer-heading { font-family: "JetBrains Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); margin-right: 4px; }
 .lmsd-layer-toggle { display: flex; align-items: center; gap: 7px; font-size: 12.5px; cursor: pointer; }
@@ -279,7 +291,7 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .editor-sub-item:hover { background: var(--panel2); }
 .editor-sub-name { flex: 1; }
 .editor-sub-coords { color: var(--ink-muted); font-size: 10.5px; }
-.tower-num { display: inline-block; position: relative; left: -50%; top: -26px; background: #fff8e1; color: #0c1117; font-family: "JetBrains Mono", monospace; font-weight: 800; line-height: 1; border-radius: 4px; border: 1.5px solid #0c1117; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.5); pointer-events: none; }
+.tower-num { display: inline-block; position: relative; left: 10px; top: -9px; background: #fff8e1; color: #0c1117; font-family: "JetBrains Mono", monospace; font-weight: 800; line-height: 1; border-radius: 4px; border: 1.5px solid #0c1117; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.5); pointer-events: none; }
 .sub-name-label { display: inline-block; position: relative; left: 10px; top: 6px; background: rgba(12,17,23,0.88); color: #e7ecf3; font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 11px; line-height: 1.15; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.18); white-space: nowrap; pointer-events: none; }
 .grat-label { display: inline-block; position: relative; top: -8px; left: 2px; font-family: "JetBrains Mono", monospace; font-size: 9px; color: #6b7f96; background: rgba(255,255,255,0.75); padding: 0 3px; border-radius: 2px; pointer-events: none; white-space: nowrap; }
 .line-name-label { display: inline-block; position: relative; left: -50%; top: -8px; background: rgba(255,255,255,0.9); color: #17222e; font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 10.5px; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15); white-space: nowrap; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
@@ -974,7 +986,7 @@ function nearestPointFractionOnPath(path, latlng) {
 // Builds one ribbon polygon per (line, segment) pair: the corridor of that
 // LMSD division's stretch of that physical circuit. Falls back gracefully
 // (skips) if lineKeys/path data isn't available for a jurisdiction entry.
-function buildLmsdCorridors(jurisdictionData) {
+function buildLmsdCorridors(jurisdictionData, halfWidthM = CORRIDOR_HALF_WIDTH_M) {
   const corridors = [];
   (jurisdictionData || []).forEach((entry) => {
     if (!entry.lineKeys || !entry.lineKeys.length) return;
@@ -1001,7 +1013,7 @@ function buildLmsdCorridors(jurisdictionData) {
         division: seg.division,
         chainage: seg.chainage,
         color: divisionColor(seg.division, kv),
-        polygon: ribbonFromPath(slice, CORRIDOR_HALF_WIDTH_M),
+        polygon: ribbonFromPath(slice, halfWidthM),
         officers,
         fullPath,
         totalKm,
@@ -1076,6 +1088,9 @@ function GridMap({
   selectedLineKey = null,
   onSelectLine = null,
   traceHighlight = null,
+  highlightLevel = 24,
+  highlightWidthM = CORRIDOR_HALF_WIDTH_M,
+  substationZoomThreshold = 47,
   towerNumbersControl = null,
   lineNamesControl = null,
   compactToolbar = false,
@@ -1127,17 +1142,41 @@ function GridMap({
     else if (mode === "satellite") satLayerRef.current.setOpacity(1);
     else satLayerRef.current.setOpacity(hybridOpacity / 100);
   }, [mode, hybridOpacity]);
+  const prevStatewideKeysRef = useRef(new Set());
+  useEffect(() => {
+    if (!mapRef.current) return;
+    // "All lines" overlays (kvFilter, no lineKeys restriction) can reach far
+    // outside this page's default Karjat-local view. Zoom out to actually
+    // show them the moment one is newly checked, but don't keep re-fitting
+    // on every later redraw \u2014 that would fight the user's own pan/zoom.
+    const statewideLayers = (extraLayers || []).filter((l) => !l.lineKeys);
+    const currentKeys = new Set(statewideLayers.map((l) => l.key));
+    const newlyAdded = [...currentKeys].some((k) => !prevStatewideKeysRef.current.has(k));
+    if (newlyAdded) {
+      const pts = [];
+      statewideLayers.forEach((layer) => {
+        LINES.filter((l) => l.path && l.path.length > 1)
+          .filter((l) => !layer.kvFilter || layer.kvFilter.includes(l.kv))
+          .forEach((l) => l.path.forEach((p) => pts.push(p)));
+      });
+      if (pts.length) {
+        mapRef.current.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
+      }
+    }
+    prevStatewideKeysRef.current = currentKeys;
+  }, [extraLayers]);
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const group = overlayGroupRef.current;
     group.clearLayers();
     if (showZones) {
-      const corridors = buildLmsdCorridors(jurisdictionData);
+      const corridors = buildLmsdCorridors(jurisdictionData, highlightWidthM);
       const anySelected = !!highlightCorridorId;
+      const levelFrac = Math.max(0.02, Math.min(1, highlightLevel / 100));
       corridors.forEach((c) => {
         const isSelected = c.id === highlightCorridorId;
-        const baseFillOpacity = anySelected ? (isSelected ? 0.58 : 0.1) : 0.24;
+        const baseFillOpacity = anySelected ? (isSelected ? Math.min(0.95, levelFrac * 2.4) : levelFrac * 0.4) : levelFrac;
         const baseWeight = isSelected ? 3 : 1;
         const baseOpacity = anySelected ? (isSelected ? 1 : 0.35) : 0.75;
         const poly = L.polygon(c.polygon, {
@@ -1180,7 +1219,7 @@ function GridMap({
     if (traceHighlight && traceHighlight.fullPath && traceHighlight.fullPath.length > 1) {
       const slice = pathSliceByFraction(traceHighlight.fullPath, traceHighlight.f0, traceHighlight.f1);
       if (slice.length >= 2) {
-        L.polygon(ribbonFromPath(slice, CORRIDOR_HALF_WIDTH_M), {
+        L.polygon(ribbonFromPath(slice, highlightWidthM), {
           color: traceHighlight.color,
           weight: 2,
           fillColor: traceHighlight.color,
@@ -1311,7 +1350,7 @@ function GridMap({
       marker.bindPopup(html);
       marker.on("click", () => onSelect(key, "substation"));
       const shortName = s.name.replace("400 kV ", "").replace("220 kV ", "").replace("765 kV ", "");
-      if ((mapZoom / 19 * 100) >= 47) {
+      if ((mapZoom / 19 * 100) >= substationZoomThreshold) {
         L.marker([s.lat, s.lon], {
           icon: L.divIcon({
             className: "sub-name-icon",
@@ -1332,7 +1371,7 @@ function GridMap({
         L.marker([s.lat, s.lon], { icon }).addTo(group);
       }
     });
-  }, [substationKeys, lineKeys, kvFilter, emphasizeKeys, extraLayers, showZones, colorVersion, jurisdictionData, showGraticule, showKm, weatherEnabled, weatherData, onSelect, mapZoom, viewTick, showTowerNumbers, showLineNames, highlightCorridorId, selectedLineKey, onSelectLine, traceHighlight]);
+  }, [substationKeys, lineKeys, kvFilter, emphasizeKeys, extraLayers, showZones, colorVersion, jurisdictionData, showGraticule, showKm, weatherEnabled, weatherData, onSelect, mapZoom, viewTick, showTowerNumbers, showLineNames, highlightCorridorId, selectedLineKey, onSelectLine, traceHighlight, highlightLevel, highlightWidthM, substationZoomThreshold]);
   useEffect(() => {
     if (!weatherEnabled) return;
     const keys = Object.entries(SUBSTATIONS).filter(([k, s]) => !s.hidden && (!substationKeys || substationKeys.includes(k))).map(([k, s]) => ({ key: k, lat: s.lat, lon: s.lon }));
@@ -1509,7 +1548,7 @@ function saveTraceColor(c) {
   try { localStorage.setItem(TRACE_COLOR_KEY, c); } catch (e) {}
 }
 function loadTraceMargin() {
-  try { const v = sessionStorage.getItem(TRACE_MARGIN_KEY); return v ? parseFloat(v) : 10; } catch (e) { return 10; }
+  try { const v = sessionStorage.getItem(TRACE_MARGIN_KEY); return v ? parseFloat(v) : 3; } catch (e) { return 3; }
 }
 function saveTraceMargin(v) {
   try { sessionStorage.setItem(TRACE_MARGIN_KEY, String(v)); } catch (e) {}
@@ -1520,6 +1559,12 @@ function TraceLineTool({ lines }) {
   const [kmFromKarjat, setKmFromKarjat] = useState(0);
   const [marginPct, setMarginPct] = useState(loadTraceMargin());
   const [highlightColor, setHighlightColorState] = useState(loadTraceColor());
+  const [showTowerNumbers, setShowTowerNumbers] = useState(false);
+  const [showLineNames, setShowLineNames] = useState(false);
+  const [highlightLevel, setHighlightLevelState] = useState(loadHighlightLevel());
+  const [highlightWidth, setHighlightWidthState] = useState(loadHighlightWidth());
+  function setHighlightLevel(v) { setHighlightLevelState(v); saveHighlightLevel(v); }
+  function setHighlightWidth(v) { setHighlightWidthState(v); saveHighlightWidth(v); }
   function setHighlightColor(c) {
     setHighlightColorState(c);
     saveTraceColor(c);
@@ -1569,28 +1614,84 @@ function TraceLineTool({ lines }) {
         React.createElement("input", { type: "color", value: highlightColor, onChange: (e) => setHighlightColor(e.target.value) }))
     ),
     entry && React.createElement("div", { className: "trace-result" },
-      React.createElement("div", null, "Total line length: ", React.createElement("span", { className: "mono" }, totalKm), " km"),
+      React.createElement("div", { className: "line-length-hero" },
+        React.createElement("span", { className: "line-length-value" }, totalKm), React.createElement("span", { className: "line-length-unit" }, "km total")
+      ),
       React.createElement("div", null, "Highlighted range: ", React.createElement("span", { className: "mono" }, rangeStart.toFixed(2)), " \u2013 ", React.createElement("span", { className: "mono" }, rangeEnd.toFixed(2)), " km (\u00b1", marginPct, "% margin)"),
       React.createElement("div", { className: "trace-lmsd-primary" }, "LMSD responsible at this point: ", React.createElement("strong", null, primaryDivision || "\u2014")),
       marginDivisions.length > 0 && React.createElement("div", { className: "trace-lmsd-margin" },
         "\u26a0\ufe0f Within the \u00b1", marginPct, "% margin, this could also fall under: ", marginDivisions.join(", "))
     ),
+    React.createElement("div", { className: "map-toprow-controls" },
+      React.createElement("button", { className: "layer-switch-single" + (showTowerNumbers ? " active" : ""), onClick: () => setShowTowerNumbers(!showTowerNumbers), title: "Tower numbers show once you zoom in close" }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"),
+      React.createElement("label", { className: "switch-toggle" + (showLineNames ? " on" : "") },
+        React.createElement("input", { type: "checkbox", checked: showLineNames, onChange: () => setShowLineNames(!showLineNames), style: { display: "none" } }),
+        React.createElement("span", { className: "switch-track" }, React.createElement("span", { className: "switch-thumb" })),
+        "Display Line Names"
+      ),
+      React.createElement(AdjustHighlightButton, { level: highlightLevel, width: highlightWidth, onLevelChange: setHighlightLevel, onWidthChange: setHighlightWidth, zonesEnabled: true })
+    ),
     React.createElement(GridMap, {
-      lineKeys: null,
-      kvFilter: null,
+      substationKeys: KARJAT_SUBSTATION_KEYS,
+      lineKeys: KARJAT_LINE_KEYS,
       showZones: false,
       jurisdictionData: lines,
       traceHighlight,
       showKm: true,
-      height: "60vh",
-      downloadName: "trace-line-map"
+      compactToolbar: true,
+      towerNumbersControl: { value: showTowerNumbers, onChange: setShowTowerNumbers },
+      lineNamesControl: { value: showLineNames, onChange: setShowLineNames },
+      highlightWidthM: highlightWidth,
+      substationZoomThreshold: 57.5,
+      height: "78vh",
+      downloadName: "length-wise-map"
     })
+  );
+}
+// ---- Highlight appearance (corridor/trace ribbon level + width) \u2014 remembered indefinitely ----
+const HIGHLIGHT_LEVEL_KEY = "karjatHighlightLevel_v1";
+const HIGHLIGHT_WIDTH_KEY = "karjatHighlightWidthM_v1";
+function loadHighlightLevel() {
+  try { const v = localStorage.getItem(HIGHLIGHT_LEVEL_KEY); return v ? parseFloat(v) : 24; } catch (e) { return 24; }
+}
+function saveHighlightLevel(v) {
+  try { localStorage.setItem(HIGHLIGHT_LEVEL_KEY, String(v)); } catch (e) {}
+}
+function loadHighlightWidth() {
+  try { const v = localStorage.getItem(HIGHLIGHT_WIDTH_KEY); return v ? parseFloat(v) : CORRIDOR_HALF_WIDTH_M; } catch (e) { return CORRIDOR_HALF_WIDTH_M; }
+}
+function saveHighlightWidth(v) {
+  try { localStorage.setItem(HIGHLIGHT_WIDTH_KEY, String(v)); } catch (e) {}
+}
+function AdjustHighlightButton({ level, width, onLevelChange, onWidthChange, zonesEnabled }) {
+  const [open, setOpen] = useState(false);
+  return React.createElement("div", { className: "adjust-highlight-wrap" },
+    React.createElement("button", { className: "layer-switch-single", onClick: () => setOpen((o) => !o) }, "\ud83c\udfa8 Adjust Highlight"),
+    open && React.createElement("div", { className: "adjust-highlight-popover" },
+      React.createElement("label", { className: "trace-field" },
+        "Highlight level" + (!zonesEnabled ? " (region highlight is off)" : ""),
+        React.createElement("input", { type: "range", min: 5, max: 90, value: level, disabled: !zonesEnabled, onChange: (e) => onLevelChange(parseFloat(e.target.value)) }),
+        React.createElement("span", { className: "mono" }, level, "%")
+      ),
+      React.createElement("label", { className: "trace-field" },
+        "Highlight width",
+        React.createElement("input", { type: "range", min: 500, max: 6000, step: 100, value: width, onChange: (e) => onWidthChange(parseFloat(e.target.value)) }),
+        React.createElement("span", { className: "mono" }, width, "m")
+      ),
+      React.createElement("div", { className: "adjust-highlight-hint" }, "Saved automatically \u2014 remembered next time you visit."),
+      React.createElement("button", { className: "cancel-btn", onClick: () => setOpen(false) }, "Done")
+    )
   );
 }
 function LmsdPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [showTowerNumbers, setShowTowerNumbers] = useState(false);
   const [showLineNames, setShowLineNames] = useState(false);
+  const [showZones, setShowZones] = useState(true);
+  const [highlightLevel, setHighlightLevelState] = useState(loadHighlightLevel());
+  const [highlightWidth, setHighlightWidthState] = useState(loadHighlightWidth());
+  function setHighlightLevel(v) { setHighlightLevelState(v); saveHighlightLevel(v); }
+  function setHighlightWidth(v) { setHighlightWidthState(v); saveHighlightWidth(v); }
   const liveEnabled = APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("PASTE_");
   const [lines, setLines] = useState(JURISDICTION_SEED.map((l) => ({ ...l, teams: l.teams.map((t) => ({ ...t, members: t.members.map((m) => ({ ...m })) })) })));
   const [loading, setLoading] = useState(false);
@@ -1691,18 +1792,29 @@ function LmsdPage() {
     return entry ? entry.lineKeys : null;
   }, [selectedCorridor, lines]);
   const lmsdGroups = useMemo(() => {
-    const map = {};
+    const raw = {};
     lines.forEach((line) => {
       const segTeamAligned = line.segments.length === line.teams.length;
       const kv = line.line.includes("220") ? "220" : "400";
       line.segments.forEach((s, i) => {
         const team = segTeamAligned ? line.teams[i] : null;
         const officers = team ? team.members : line.teams.flatMap((t) => t.members);
-        if (!map[s.division]) map[s.division] = { kv, rows: [] };
-        map[s.division].rows.push({ line: line.line, chainage: simplifyChainage(s.chainage, line.segments.length), officers });
+        if (!raw[s.division]) raw[s.division] = { kv, employees: new Map() };
+        const chainage = simplifyChainage(s.chainage, line.segments.length);
+        officers.forEach((m) => {
+          const key = `${m.name}__${m.mobile}`;
+          if (!raw[s.division].employees.has(key)) {
+            raw[s.division].employees.set(key, { name: m.name, post: m.post, mobile: m.mobile, lines: [] });
+          }
+          raw[s.division].employees.get(key).lines.push({ line: line.line, chainage });
+        });
       });
     });
-    return map;
+    const out = {};
+    Object.entries(raw).forEach(([division, g]) => {
+      out[division] = { kv: g.kv, employees: [...g.employees.values()] };
+    });
+    return out;
   }, [lines]);
   const extraLayers = useMemo(() => LMSD_LAYER_DEFS.filter((l) => activeLayers[l.key]), [activeLayers]);
   return React.createElement("div", { className: "page" },
@@ -1713,22 +1825,27 @@ function LmsdPage() {
     }),
     React.createElement("div", { className: "lmsd-tabs" },
       React.createElement("button", { className: "lmsd-tab" + (activeTab === "all" ? " active" : ""), onClick: () => setActiveTab("all") }, "All Lines"),
-      React.createElement("button", { className: "lmsd-tab" + (activeTab === "trace" ? " active" : ""), onClick: () => setActiveTab("trace") }, "Trace Line Area")
+      React.createElement("button", { className: "lmsd-tab" + (activeTab === "trace" ? " active" : ""), onClick: () => setActiveTab("trace") }, "Length Wise")
     ),
     activeTab === "trace" ? React.createElement(TraceLineTool, { lines }) : React.createElement(React.Fragment, null,
     React.createElement("div", { className: "map-toprow-controls" },
+      React.createElement("label", { className: "checkbox-toggle" },
+        React.createElement("input", { type: "checkbox", checked: showZones, onChange: (e) => setShowZones(e.target.checked) }),
+        "Show LMSD Region"
+      ),
       React.createElement("button", { className: "layer-switch-single" + (showTowerNumbers ? " active" : ""), onClick: () => setShowTowerNumbers(!showTowerNumbers), title: "Tower numbers show once you zoom in close" }, showTowerNumbers ? "\u2713 Tower numbers" : "Tower numbers off"),
       React.createElement("label", { className: "switch-toggle" + (showLineNames ? " on" : "") },
         React.createElement("input", { type: "checkbox", checked: showLineNames, onChange: () => setShowLineNames(!showLineNames), style: { display: "none" } }),
         React.createElement("span", { className: "switch-track" }, React.createElement("span", { className: "switch-thumb" })),
         "Display Line Names"
-      )
+      ),
+      React.createElement(AdjustHighlightButton, { level: highlightLevel, width: highlightWidth, onLevelChange: setHighlightLevel, onWidthChange: setHighlightWidth, zonesEnabled: showZones })
     ),
     React.createElement("div", { className: "split-layout" },
       React.createElement(GridMap, {
         substationKeys: KARJAT_SUBSTATION_KEYS,
         lineKeys: KARJAT_LINE_KEYS,
-        showZones: true,
+        showZones,
         jurisdictionData: lines,
         colorVersion,
         extraLayers,
@@ -1738,6 +1855,8 @@ function LmsdPage() {
         lineNamesControl: { value: showLineNames, onChange: setShowLineNames },
         highlightCorridorId: selectedCorridor ? selectedCorridor.id : null,
         selectedLineKey: selectedLineKeys,
+        highlightLevel,
+        highlightWidthM: highlightWidth,
         onSelect: (payload, type) => type === "corridor" && setSelectedCorridor(payload),
         height: "72vh",
         downloadName: "karjat-lmsd-map"
@@ -1753,6 +1872,9 @@ function LmsdPage() {
               React.createElement("div", { className: "jur-card" },
                 React.createElement("div", { className: "jur-line-name" }, selectedInfo.line),
                 React.createElement("div", { className: "jur-chainage" }, "Chainage: ", selectedInfo.chainage),
+                React.createElement("div", { className: "line-length-hero" },
+                  React.createElement("span", { className: "line-length-value" }, selectedInfo.totalKm), React.createElement("span", { className: "line-length-unit" }, "km total")
+                ),
                 React.createElement("div", { className: "jur-distances" },
                   React.createElement("div", { className: "jur-distance-row" },
                     React.createElement("span", { className: "muted" }, "From ", selectedInfo.karjatEndName, ":"),
@@ -1761,8 +1883,7 @@ function LmsdPage() {
                   React.createElement("div", { className: "jur-distance-row" },
                     React.createElement("span", { className: "muted" }, "From ", selectedInfo.otherEndName, ":"),
                     React.createElement("span", { className: "mono" }, selectedInfo.kmFromOther, " km")
-                  ),
-                  React.createElement("div", { className: "jur-distance-row muted-small" }, "Total line length: ", selectedInfo.totalKm, " km")
+                  )
                 ),
                 selectedInfo.officers.length === 0
                   ? React.createElement("div", { className: "muted" }, "No officer assigned yet")
@@ -1805,20 +1926,22 @@ function LmsdPage() {
               onChange: (e) => changeDivisionColor(division, e.target.value)
             })
           ),
-          g.rows.map((row, ri) => React.createElement("div", { key: ri, className: "lmsd-directory-row" },
-            React.createElement("div", { className: "lmsd-directory-line" }, row.line, " ", React.createElement("span", { className: "mono muted" }, "(", row.chainage, ")")),
-            row.officers.length === 0
-              ? React.createElement("div", { className: "muted" }, "No officer assigned yet")
-              : row.officers.map((m, mi) => React.createElement("div", { key: mi, className: "officer-line" },
+          g.employees.length === 0
+            ? React.createElement("div", { className: "muted" }, "No officer assigned yet")
+            : g.employees.map((emp, ei) => React.createElement("div", { key: ei, className: "lmsd-directory-row" },
+                React.createElement("div", { className: "officer-line" },
                   React.createElement(User, { size: 13 }), " ",
-                  React.createElement("span", null, m.name), " ",
-                  React.createElement("span", { className: "muted" }, "\u00b7 ", m.post),
+                  React.createElement("span", null, emp.name), " ",
+                  React.createElement("span", { className: "muted" }, "\u00b7 ", emp.post),
                   React.createElement("span", { className: "jur-mobile-actions" },
-                    React.createElement("a", { className: "contact-btn", href: `tel:${m.mobile}` }, React.createElement(Phone, { size: 11 }), " Call"),
-                    React.createElement("a", { className: "contact-btn whatsapp", href: `https://wa.me/91${m.mobile}`, target: "_blank", rel: "noreferrer" }, "WhatsApp")
+                    React.createElement("a", { className: "contact-btn", href: `tel:${emp.mobile}` }, React.createElement(Phone, { size: 11 }), " Call"),
+                    React.createElement("a", { className: "contact-btn whatsapp", href: `https://wa.me/91${emp.mobile}`, target: "_blank", rel: "noreferrer" }, "WhatsApp")
                   )
-                ))
-          ))
+                ),
+                React.createElement("div", { className: "lmsd-directory-lines-covered" },
+                  emp.lines.map((l, li) => React.createElement("span", { key: li, className: "line-chip" }, l.line, " (", l.chainage, ")"))
+                )
+              ))
         ))
       )
     ),
@@ -1860,7 +1983,9 @@ function LmsdPage() {
                   const officers = team ? team.members : line.teams.flatMap((t) => t.members);
                   return React.createElement("tr", { key: i },
                     React.createElement("td", { className: "mono" }, simplifyChainage(s.chainage, line.segments.length)),
-                    React.createElement("td", null, s.division),
+                    React.createElement("td", null,
+                      React.createElement("span", { className: "multi-lmsd-chip", style: { borderColor: divisionColor(s.division, line.line.includes("220") ? "220" : "400") } }, s.division)
+                    ),
                     React.createElement("td", null,
                       officers.length === 0
                         ? React.createElement("span", { className: "muted" }, "None yet")
@@ -1877,10 +2002,6 @@ function LmsdPage() {
                   );
                 })
               )
-            ),
-            allDivisions.length > 1 && React.createElement("div", { className: "multi-lmsd-col" },
-              React.createElement("div", { className: "multi-lmsd-title" }, "LMSDs on this line"),
-              allDivisions.map((d, i) => React.createElement("div", { key: i, className: "multi-lmsd-chip", style: { borderColor: divisionColor(d, line.line.includes("220") ? "220" : "400") } }, d))
             ),
             editing && React.createElement("div", { className: "teams-grid editor-teams-grid" },
               line.teams.map((team, ti) => React.createElement("div", { key: ti, className: "team-card" },
@@ -2001,6 +2122,8 @@ function StatewidePage() {
     React.createElement(GridMap, {
       substationKeys: null,
       lineKeys: null,
+      emphasizeKeys: KARJAT_LINE_KEYS,
+      jurisdictionData: JURISDICTION_SEED,
       weatherEnabled: false,
       height: "78vh",
       center: [18.6, 75.4],
@@ -2124,8 +2247,15 @@ function SchematicDiagram({ scope }) {
     }),
     data.subs.map((s) => {
       const [x, y] = data.project([s.lat, s.lon]);
+      const isTee = s.kv === "tee";
       const color = KV_COLOR[s.kv] || "#333";
       const isKarjat = s.key === "karjat";
+      if (isTee) {
+        return React.createElement("g", { key: s.key, transform: `translate(${x},${y})` },
+          React.createElement("circle", { r: 2.4, fill: "#fff", stroke: "#777", strokeWidth: 1 }),
+          React.createElement("text", { x: 6, y: 3, fontSize: 8.5, fontWeight: 500, fontFamily: "Space Grotesk, sans-serif", fill: "#777" }, "Tpoint")
+        );
+      }
       return React.createElement("g", { key: s.key, transform: `translate(${x},${y})` },
         React.createElement("rect", { x: -16, y: -3, width: 32, height: 6, fill: color, stroke: "#111", strokeWidth: isKarjat ? 1.4 : 0.6 }),
         React.createElement("text", { x: 0, y: -10, textAnchor: "middle", fontSize: isKarjat ? 12 : 10, fontWeight: isKarjat ? 700 : 500, fontFamily: "Space Grotesk, sans-serif", fill: "#111" }, shortName(s.name))
