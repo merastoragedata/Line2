@@ -127,6 +127,43 @@ function getOrCreateFolder_() {
   return it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER_NAME);
 }
 
+const SEED_LMSD_DETAILS = [
+  { id: "lmsd_lonikand", name: "LMSD Lonikand", zone: "", circle: "", division: "", color: "",
+    employees: [{ name: "Aishwarya Kirtane", post: "AEE", mobile: "9922364856", whatsapp: true }] },
+  { id: "lmsd_lamboti", name: "400 kV LMSD Lamboti", zone: "", circle: "", division: "", color: "",
+    employees: [{ name: "Shri Nadgire", post: "DyCT", mobile: "9850704944", whatsapp: true }] },
+  { id: "lmsd_girwali", name: "LMSD Girwali", zone: "", circle: "", division: "", color: "",
+    employees: [{ name: "Nagesh Saray", post: "AE", mobile: "8554994942", whatsapp: true }] },
+  { id: "lmsd_powergrid_tba", name: "POWERGRID (to be assigned)", zone: "", circle: "", division: "", color: "", employees: [] },
+  { id: "lmsd_kedgaon", name: "LMSD Kedgaon", zone: "", circle: "", division: "", color: "",
+    employees: [
+      { name: "Kishor Katore", post: "AEE", mobile: "9762430884", whatsapp: true },
+      { name: "Kailash Patil", post: "DyEE", mobile: "7030831440", whatsapp: true }
+    ] },
+  { id: "lmsd_baramati", name: "LMSD Baramati", zone: "", circle: "", division: "", color: "",
+    employees: [{ name: "Mali", post: "AEE", mobile: "7798430251", whatsapp: true }] }
+];
+const SEED_LINE_COVERAGE = [
+  { line: "400 kV Karjat - Girawali Line 1 & 2", lineKeys: ["karjat_lilo", "lilo_girawali"], length: "214.6 km",
+    ranges: [{ lmsdId: "lmsd_lonikand", kmEnd: 37 }, { lmsdId: "lmsd_lamboti", kmEnd: 87 }, { lmsdId: "lmsd_girwali", kmEnd: 214.6 }] },
+  { line: "400 kV Karjat - Lonikand Line 1 & 2", lineKeys: ["karjat_lilo", "lilo_lonikand2"], length: "85.4 km",
+    ranges: [{ lmsdId: "lmsd_lonikand", kmEnd: 85.4 }] },
+  { line: "400/765 kV Karjat - Pune East Line 1 (planned)", lineKeys: ["karjat_puneeast"], length: "~50 km D/C",
+    ranges: [{ lmsdId: "lmsd_powergrid_tba", kmEnd: 50 }] },
+  { line: "220 kV Karjat - Ahilyanagar Line 1", lineKeys: ["karjat_cutab", "cutab_ahilyanagar"], length: "79.6 km",
+    ranges: [{ lmsdId: "lmsd_kedgaon", kmEnd: 79.6 }] },
+  { line: "220 kV Karjat - Belwandi Line 1", lineKeys: ["karjat_cutab", "cutab_belwandi"], length: "40.7 km",
+    ranges: [{ lmsdId: "lmsd_kedgaon", kmEnd: 40.7 }] },
+  { line: "220 kV Karjat - Bhigwan Line 1", lineKeys: ["karjat_bhigwan"], length: "19.84 km",
+    ranges: [{ lmsdId: "lmsd_baramati", kmEnd: 19.84 }] },
+  { line: "220 kV Karjat - Shirsuphal Line 1", lineKeys: ["karjat_shirsuphal"], length: "19.84 km",
+    ranges: [{ lmsdId: "lmsd_baramati", kmEnd: 19.84 }] },
+  { line: "220 kV Karjat - Jeur Line 1", lineKeys: ["karjat_jeur"], length: "50.69 km",
+    ranges: [{ lmsdId: "lmsd_baramati", kmEnd: 50.69 }] },
+  { line: "220 kV Karjat - Jeur Line 2", lineKeys: ["karjat_jeur"], length: "50.69 km",
+    ranges: [{ lmsdId: "lmsd_baramati", kmEnd: 50.69 }] }
+];
+
 function getOrCreateSpreadsheet_() {
   const folder = getOrCreateFolder_();
   const files = folder.getFilesByName(SHEET_NAME);
@@ -185,6 +222,13 @@ function INIT_() {
   const defaultSheet = ss.getSheetByName("Sheet1");
 
   SEED_LINES.forEach((lineObj) => seedLineSheet_(ss, lineObj));
+
+  // Seed the LMSD Details / Line Coverage model only if nothing has been
+  // saved there yet \u2014 never clobber real edits on a repeat init.
+  if (!getLmsdModel_()) {
+    saveLmsdDetails_(SEED_LMSD_DETAILS);
+    saveLineCoverage_(SEED_LINE_COVERAGE);
+  }
 
   if (defaultSheet && ss.getSheets().length > 1) {
     ss.deleteSheet(defaultSheet);
@@ -297,6 +341,51 @@ function saveTeamsForLine_(lineName, teams) {
 
 // ---- Line/Substation Editor geometry storage (single JSON blob per save) ----
 const GEOMETRY_SHEET_NAME = "Geometry";
+const LMSD_MODEL_SHEET_NAME = "LmsdModel";
+
+function getLmsdModelSheet_() {
+  const ss = getOrCreateSpreadsheet_();
+  let sheet = ss.getSheetByName(LMSD_MODEL_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(LMSD_MODEL_SHEET_NAME);
+    sheet.getRange(1, 1, 1, 3).setValues([["Saved at", "LMSD Details JSON", "Line Coverage JSON"]]).setFontWeight("bold");
+  }
+  return sheet;
+}
+
+function getLmsdModel_() {
+  const sheet = getLmsdModelSheet_();
+  if (sheet.getLastRow() < 2) return null;
+  const row = sheet.getLastRow();
+  const detailsJson = sheet.getRange(row, 2).getValue();
+  const coverageJson = sheet.getRange(row, 3).getValue();
+  if (!detailsJson || !coverageJson) return null;
+  try {
+    return { lmsdDetails: JSON.parse(detailsJson), lineCoverage: JSON.parse(coverageJson) };
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveLmsdDetails_(lmsdDetails) {
+  if (!lmsdDetails || !lmsdDetails.length) throw new Error("lmsdDetails must be a non-empty array.");
+  const existing = getLmsdModel_();
+  const lineCoverage = existing ? existing.lineCoverage : [];
+  const sheet = getLmsdModelSheet_();
+  if (sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1);
+  sheet.getRange(2, 1, 1, 3).setValues([[new Date().toISOString(), JSON.stringify(lmsdDetails), JSON.stringify(lineCoverage)]]);
+  return lmsdDetails;
+}
+
+function saveLineCoverage_(lineCoverage) {
+  if (!lineCoverage || !lineCoverage.length) throw new Error("lineCoverage must be a non-empty array.");
+  const existing = getLmsdModel_();
+  const lmsdDetails = existing ? existing.lmsdDetails : [];
+  const sheet = getLmsdModelSheet_();
+  if (sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1);
+  sheet.getRange(2, 1, 1, 3).setValues([[new Date().toISOString(), JSON.stringify(lmsdDetails), JSON.stringify(lineCoverage)]]);
+  return lineCoverage;
+}
 
 function getGeometrySheet_() {
   const ss = getOrCreateSpreadsheet_();
@@ -331,6 +420,149 @@ function saveGeometry_(geometry) {
   return geometry;
 }
 
+// ---- App-wide small settings (division colour overrides, highlight
+// level/width, trace highlight colour) \u2014 one JSON blob per field, same
+// read-merge-write pattern as the LMSD model so saving one field never
+// clobbers the others. All of these are small strings/numbers, so a single
+// row comfortably stays under the per-cell character limit. ----
+const APP_SETTINGS_SHEET_NAME = "AppSettings";
+const APP_SETTINGS_DEFAULTS = { divisionColors: {}, highlightLevel: 24, highlightWidth: 2600, traceColor: "#ffcc00" };
+
+function getAppSettingsSheet_() {
+  const ss = getOrCreateSpreadsheet_();
+  let sheet = ss.getSheetByName(APP_SETTINGS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(APP_SETTINGS_SHEET_NAME);
+    sheet.getRange(1, 1, 1, 5).setValues([["Saved at", "Division Colors JSON", "Highlight Level", "Highlight Width (m)", "Trace Colour"]]).setFontWeight("bold");
+  }
+  return sheet;
+}
+
+function getAppSettings_() {
+  const sheet = getAppSettingsSheet_();
+  if (sheet.getLastRow() < 2) return { ...APP_SETTINGS_DEFAULTS };
+  const row = sheet.getLastRow();
+  const vals = sheet.getRange(row, 2, 1, 4).getValues()[0];
+  let divisionColors = APP_SETTINGS_DEFAULTS.divisionColors;
+  try { divisionColors = vals[0] ? JSON.parse(vals[0]) : {}; } catch (e) {}
+  return {
+    divisionColors,
+    highlightLevel: vals[1] || APP_SETTINGS_DEFAULTS.highlightLevel,
+    highlightWidth: vals[2] || APP_SETTINGS_DEFAULTS.highlightWidth,
+    traceColor: vals[3] || APP_SETTINGS_DEFAULTS.traceColor
+  };
+}
+
+function writeAppSettings_(settings) {
+  const sheet = getAppSettingsSheet_();
+  if (sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1);
+  sheet.getRange(2, 1, 1, 5).setValues([[
+    new Date().toISOString(),
+    JSON.stringify(settings.divisionColors || {}),
+    settings.highlightLevel || APP_SETTINGS_DEFAULTS.highlightLevel,
+    settings.highlightWidth || APP_SETTINGS_DEFAULTS.highlightWidth,
+    settings.traceColor || APP_SETTINGS_DEFAULTS.traceColor
+  ]]);
+  return settings;
+}
+
+function saveDivisionColors_(divisionColors) {
+  if (!divisionColors || typeof divisionColors !== "object") throw new Error("divisionColors must be an object.");
+  const current = getAppSettings_();
+  const next = { ...current, divisionColors };
+  return writeAppSettings_(next);
+}
+
+function saveHighlight_(highlightLevel, highlightWidth) {
+  const current = getAppSettings_();
+  const next = { ...current };
+  if (highlightLevel !== undefined && highlightLevel !== null) next.highlightLevel = highlightLevel;
+  if (highlightWidth !== undefined && highlightWidth !== null) next.highlightWidth = highlightWidth;
+  return writeAppSettings_(next);
+}
+
+function saveTraceColor_(traceColor) {
+  if (!traceColor) throw new Error("traceColor is required.");
+  const current = getAppSettings_();
+  const next = { ...current, traceColor };
+  return writeAppSettings_(next);
+}
+
+// ---- Weather background photos, per substation. Each photo is stored as a
+// row-group: one row per ~40,000-char chunk (Sheets cells cap at 50,000
+// chars, and compressed phone photos can exceed that as one blob), all
+// sharing a photoId so they can be reassembled in order. This also makes
+// deletes safe across devices (delete by photoId, not by array index, which
+// could point at different photos on different devices). ----
+const WEATHER_BG_SHEET_NAME = "WeatherBg";
+const WEATHER_BG_CHUNK_SIZE = 40000;
+
+function getWeatherBgSheet_() {
+  const ss = getOrCreateSpreadsheet_();
+  let sheet = ss.getSheetByName(WEATHER_BG_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(WEATHER_BG_SHEET_NAME);
+    sheet.getRange(1, 1, 1, 5).setValues([["Substation Key", "Photo ID", "Chunk Index", "Chunk Text", "Saved at"]]).setFontWeight("bold");
+  }
+  return sheet;
+}
+
+function getWeatherBg_() {
+  const sheet = getWeatherBgSheet_();
+  if (sheet.getLastRow() < 2) return {};
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getValues();
+  // photoGroups: subKey -> photoId -> { chunks: {idx: text}, savedAt }
+  const photoGroups = {};
+  rows.forEach((r) => {
+    const [subKey, photoId, chunkIdx, chunkText, savedAt] = r;
+    if (!subKey || !photoId) return;
+    photoGroups[subKey] = photoGroups[subKey] || {};
+    photoGroups[subKey][photoId] = photoGroups[subKey][photoId] || { chunks: {}, savedAt };
+    photoGroups[subKey][photoId].chunks[chunkIdx] = chunkText;
+    photoGroups[subKey][photoId].savedAt = savedAt;
+  });
+  const store = {};
+  Object.entries(photoGroups).forEach(([subKey, photos]) => {
+    const list = Object.entries(photos).map(([photoId, p]) => {
+      const chunkIndices = Object.keys(p.chunks).map(Number).sort((a, b) => a - b);
+      const dataUrl = chunkIndices.map((i) => p.chunks[i]).join("");
+      return { id: photoId, dataUrl, savedAt: p.savedAt };
+    });
+    list.sort((a, b) => String(a.savedAt).localeCompare(String(b.savedAt)));
+    store[subKey] = list.map(({ id, dataUrl }) => ({ id, dataUrl }));
+  });
+  return store;
+}
+
+function addWeatherPhoto_(subKey, dataUrl) {
+  if (!subKey || !dataUrl) throw new Error("subKey and dataUrl are required.");
+  const sheet = getWeatherBgSheet_();
+  const photoId = "p" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+  const savedAt = new Date().toISOString();
+  const rows = [];
+  for (let i = 0; i < dataUrl.length; i += WEATHER_BG_CHUNK_SIZE) {
+    rows.push([subKey, photoId, rows.length, dataUrl.slice(i, i + WEATHER_BG_CHUNK_SIZE), savedAt]);
+  }
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 5).setValues(rows);
+  return { id: photoId, subKey };
+}
+
+function removeWeatherPhoto_(subKey, photoId) {
+  if (!subKey || !photoId) throw new Error("subKey and photoId are required.");
+  const sheet = getWeatherBgSheet_();
+  if (sheet.getLastRow() < 2) return { removed: 0 };
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+  let removed = 0;
+  // Delete bottom-up so row indices don't shift under us mid-loop.
+  for (let i = rows.length - 1; i >= 0; i--) {
+    if (rows[i][0] === subKey && String(rows[i][1]) === String(photoId)) {
+      sheet.deleteRow(i + 2);
+      removed++;
+    }
+  }
+  return { removed };
+}
+
 function jsonOut_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -353,6 +585,16 @@ function doGet(e) {
     if (action === "getgeometry") {
       return jsonOut_({ ok: true, geometry: getGeometry_() });
     }
+    if (action === "getlmsdmodel") {
+      const model = getLmsdModel_();
+      return jsonOut_({ ok: true, lmsdDetails: model ? model.lmsdDetails : [], lineCoverage: model ? model.lineCoverage : [] });
+    }
+    if (action === "getappsettings") {
+      return jsonOut_({ ok: true, settings: getAppSettings_() });
+    }
+    if (action === "getweatherbg") {
+      return jsonOut_({ ok: true, store: getWeatherBg_() });
+    }
     return jsonOut_({ ok: false, error: "Unknown action: " + action });
   } catch (err) {
     return jsonOut_({ ok: false, error: String(err) });
@@ -373,6 +615,34 @@ function doPost(e) {
     if (action === "savegeometry") {
       const result = saveGeometry_(body.geometry);
       return jsonOut_({ ok: true, geometry: result });
+    }
+    if (action === "savelmsddetails") {
+      const result = saveLmsdDetails_(body.lmsdDetails);
+      return jsonOut_({ ok: true, lmsdDetails: result });
+    }
+    if (action === "savelinecoverage") {
+      const result = saveLineCoverage_(body.lineCoverage);
+      return jsonOut_({ ok: true, lineCoverage: result });
+    }
+    if (action === "savedivisioncolors") {
+      const result = saveDivisionColors_(body.divisionColors);
+      return jsonOut_({ ok: true, settings: result });
+    }
+    if (action === "savehighlight") {
+      const result = saveHighlight_(body.highlightLevel, body.highlightWidth);
+      return jsonOut_({ ok: true, settings: result });
+    }
+    if (action === "savetracecolor") {
+      const result = saveTraceColor_(body.traceColor);
+      return jsonOut_({ ok: true, settings: result });
+    }
+    if (action === "addweatherphoto") {
+      const result = addWeatherPhoto_(body.subKey, body.dataUrl);
+      return jsonOut_({ ok: true, photo: result });
+    }
+    if (action === "removeweatherphoto") {
+      const result = removeWeatherPhoto_(body.subKey, body.photoId);
+      return jsonOut_({ ok: true, result });
     }
     return jsonOut_({ ok: false, error: "Unknown action: " + action });
   } catch (err) {
