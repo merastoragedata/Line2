@@ -267,6 +267,16 @@ main { flex: 1; padding: 24px 28px 40px; max-width: 1400px; width: 100%; margin:
 .member-row input:disabled { opacity: .8; background: transparent; border-color: transparent; padding-left: 0; }
 .x-btn { background: transparent; border: none; color: #f87171; font-size: 16px; line-height: 1; padding: 0 4px; }
 .add-link { display: block; margin-top: 4px; font-size: 11.5px; color: var(--cyan); background: transparent; border: none; padding: 4px 0; }
+.add-link.danger { color: #e0665a; }
+.lmsd-detail-meta { display: flex; flex-direction: column; gap: 6px; }
+.lmsd-detail-edit { display: flex; flex-direction: column; gap: 8px; }
+.lmsd-edit-row { display: flex; gap: 6px; }
+.lmsd-edit-row input { flex: 1; min-width: 0; }
+.switch-toggle.small .switch-track { width: 24px; height: 13px; }
+.switch-toggle.small .switch-thumb { width: 9px; height: 9px; }
+.switch-toggle.small.on .switch-thumb { left: 13px; }
+.coverage-edit-cell { display: flex; gap: 6px; align-items: center; }
+.coverage-km-input { width: 64px; }
 .add-team-btn { align-self: start; height: fit-content; border-style: dashed; color: var(--ink-muted); }
 
 /* ---------------- Line & Substation Editor ---------------- */
@@ -622,85 +632,68 @@ const DEFAULT_LINES = [
   { key: "bhalwani_pandharpur1", from: "bhalwani", to: "pandharpur1", kv: "220", circuits: 1, status: "existing", km: "", path: [[17.8, 75.5], [17.654623, 75.325002]] },
   { key: "pandharpur1_pandharpur2", from: "pandharpur1", to: "pandharpur2", kv: "220", circuits: 2, status: "existing", km: "", path: [[17.654623, 75.325002], [17.657, 75.327]] }
 ];
-const JURISDICTION_SEED = [
-  {
-    line: "400 kV Karjat - Girawali Line 1 & 2",
-    length: "214.6 km",
-    lineKeys: ["karjat_lilo", "lilo_girawali"],
-    segments: [
-      { chainage: "0-37 km", division: "LMSD Lonikand" },
-      { chainage: "37-87 km", division: "400 kV LMSD Lamboti" },
-      { chainage: "87-214.6 km", division: "LMSD Girwali" }
-    ],
-    teams: [
-      { teamName: "Team 1", members: [{ name: "Aishwarya Kirtane", post: "AEE", mobile: "9922364856" }] },
-      { teamName: "Team 2", members: [{ name: "Shri Nadgire", post: "DyCT", mobile: "9850704944" }] },
-      { teamName: "Team 3", members: [{ name: "Nagesh Saray", post: "AE", mobile: "8554994942" }] }
-    ]
-  },
-  {
-    line: "400 kV Karjat - Lonikand Line 1 & 2",
-    length: "85.4 km",
-    lineKeys: ["karjat_lilo", "lilo_lonikand2"],
-    segments: [{ chainage: "0-85.4 km", division: "LMSD Lonikand" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Aishwarya Kirtane", post: "AEE", mobile: "9922364856" }] }]
-  },
-  {
-    line: "400/765 kV Karjat - Pune East Line 1 (planned)",
-    length: "~50 km D/C",
-    lineKeys: ["karjat_puneeast"],
-    segments: [{ chainage: "0-50 km", division: "POWERGRID (to be assigned)" }],
-    teams: []
-  },
-  {
-    line: "220 kV Karjat - Ahilyanagar Line 1",
-    length: "79.6 km",
-    lineKeys: ["karjat_cutab", "cutab_ahilyanagar"],
-    segments: [{ chainage: "0-79.6 km", division: "LMSD Kedgaon" }],
-    teams: [{ teamName: "Team 1", members: [
-      { name: "Kishor Katore", post: "AEE", mobile: "9762430884" },
-      { name: "Kailash Patil", post: "DyEE", mobile: "7030831440" }
-    ] }]
-  },
-  {
-    line: "220 kV Karjat - Belwandi Line 1",
-    length: "40.7 km",
-    lineKeys: ["karjat_cutab", "cutab_belwandi"],
-    segments: [{ chainage: "0-40.7 km", division: "LMSD Kedgaon" }],
-    teams: [{ teamName: "Team 1", members: [
-      { name: "Kishor Katore", post: "AEE", mobile: "9762430884" },
-      { name: "Kailash Patil", post: "DyEE", mobile: "7030831440" }
-    ] }]
-  },
-  {
-    line: "220 kV Karjat - Bhigwan Line 1",
-    length: "19.84 km",
-    lineKeys: ["karjat_bhigwan"],
-    segments: [{ chainage: "0-19.84 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
-  },
-  {
-    line: "220 kV Karjat - Shirsuphal Line 1",
-    length: "19.84 km",
-    lineKeys: ["karjat_shirsuphal"],
-    segments: [{ chainage: "0-19.84 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
-  },
-  {
-    line: "220 kV Karjat - Jeur Line 1",
-    length: "50.69 km",
-    lineKeys: ["karjat_jeur"],
-    segments: [{ chainage: "0-50.69 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
-  },
-  {
-    line: "220 kV Karjat - Jeur Line 2",
-    length: "50.69 km",
-    lineKeys: ["karjat_jeur"],
-    segments: [{ chainage: "0-50.69 km", division: "LMSD Baramati" }],
-    teams: [{ teamName: "Team 1", members: [{ name: "Mali", post: "AEE", mobile: "7798430251" }] }]
-  }
+// ---- LMSD Details: the master list of LMSD offices (zone/circle/division,
+// employees, highlight colour) \u2014 independent of which lines they cover. ----
+const LMSD_DETAILS_SEED = [
+  { id: "lmsd_lonikand", name: "LMSD Lonikand", zone: "", circle: "", division: "", color: "",
+    employees: [{ name: "Aishwarya Kirtane", post: "AEE", mobile: "9922364856", whatsapp: true }] },
+  { id: "lmsd_lamboti", name: "400 kV LMSD Lamboti", zone: "", circle: "", division: "", color: "",
+    employees: [{ name: "Shri Nadgire", post: "DyCT", mobile: "9850704944", whatsapp: true }] },
+  { id: "lmsd_girwali", name: "LMSD Girwali", zone: "", circle: "", division: "", color: "",
+    employees: [{ name: "Nagesh Saray", post: "AE", mobile: "8554994942", whatsapp: true }] },
+  { id: "lmsd_powergrid_tba", name: "POWERGRID (to be assigned)", zone: "", circle: "", division: "", color: "", employees: [] },
+  { id: "lmsd_kedgaon", name: "LMSD Kedgaon", zone: "", circle: "", division: "", color: "",
+    employees: [
+      { name: "Kishor Katore", post: "AEE", mobile: "9762430884", whatsapp: true },
+      { name: "Kailash Patil", post: "DyEE", mobile: "7030831440", whatsapp: true }
+    ] },
+  { id: "lmsd_baramati", name: "LMSD Baramati", zone: "", circle: "", division: "", color: "",
+    employees: [{ name: "Mali", post: "AEE", mobile: "7798430251", whatsapp: true }] }
 ];
+// ---- LMSDs Covering Line: which LMSD(s) are responsible for which km-range
+// of each line. kmEnd only \u2014 a range's start is the previous range's end
+// (0 for the first), and the last range always reaches the full length. ----
+const LINE_COVERAGE_SEED = [
+  { line: "400 kV Karjat - Girawali Line 1 & 2", lineKeys: ["karjat_lilo", "lilo_girawali"], length: "214.6 km",
+    ranges: [{ lmsdId: "lmsd_lonikand", kmEnd: 37 }, { lmsdId: "lmsd_lamboti", kmEnd: 87 }, { lmsdId: "lmsd_girwali", kmEnd: 214.6 }] },
+  { line: "400 kV Karjat - Lonikand Line 1 & 2", lineKeys: ["karjat_lilo", "lilo_lonikand2"], length: "85.4 km",
+    ranges: [{ lmsdId: "lmsd_lonikand", kmEnd: 85.4 }] },
+  { line: "400/765 kV Karjat - Pune East Line 1 (planned)", lineKeys: ["karjat_puneeast"], length: "~50 km D/C",
+    ranges: [{ lmsdId: "lmsd_powergrid_tba", kmEnd: 50 }] },
+  { line: "220 kV Karjat - Ahilyanagar Line 1", lineKeys: ["karjat_cutab", "cutab_ahilyanagar"], length: "79.6 km",
+    ranges: [{ lmsdId: "lmsd_kedgaon", kmEnd: 79.6 }] },
+  { line: "220 kV Karjat - Belwandi Line 1", lineKeys: ["karjat_cutab", "cutab_belwandi"], length: "40.7 km",
+    ranges: [{ lmsdId: "lmsd_kedgaon", kmEnd: 40.7 }] },
+  { line: "220 kV Karjat - Bhigwan Line 1", lineKeys: ["karjat_bhigwan"], length: "19.84 km",
+    ranges: [{ lmsdId: "lmsd_baramati", kmEnd: 19.84 }] },
+  { line: "220 kV Karjat - Shirsuphal Line 1", lineKeys: ["karjat_shirsuphal"], length: "19.84 km",
+    ranges: [{ lmsdId: "lmsd_baramati", kmEnd: 19.84 }] },
+  { line: "220 kV Karjat - Jeur Line 1", lineKeys: ["karjat_jeur"], length: "50.69 km",
+    ranges: [{ lmsdId: "lmsd_baramati", kmEnd: 50.69 }] },
+  { line: "220 kV Karjat - Jeur Line 2", lineKeys: ["karjat_jeur"], length: "50.69 km",
+    ranges: [{ lmsdId: "lmsd_baramati", kmEnd: 50.69 }] }
+];
+// Reconstructs the old {line,length,lineKeys,segments,teams} shape that every
+// existing corridor/side-panel/employee-directory/downloads function already
+// expects, computed FROM the normalized LMSD Details + Line Coverage tables.
+// This is what makes the restructure safe: nothing downstream needs to change.
+function deriveLinesFromCoverage(lmsdDetails, lineCoverage) {
+  const byId = new Map(lmsdDetails.map((d) => [d.id, d]));
+  return lineCoverage.map((lc) => {
+    let prevKm = 0;
+    const segments = [];
+    const teams = [];
+    (lc.ranges || []).forEach((r, i) => {
+      const detail = byId.get(r.lmsdId);
+      const name = detail ? detail.name : "(unassigned)";
+      segments.push({ chainage: `${prevKm}-${r.kmEnd} km`, division: name });
+      teams.push({ teamName: `Team ${i + 1}`, members: detail ? detail.employees.map((e) => ({ name: e.name, post: e.post, mobile: e.mobile, whatsapp: e.whatsapp !== false })) : [] });
+      prevKm = r.kmEnd;
+    });
+    return { line: lc.line, length: lc.length, lineKeys: lc.lineKeys, segments, teams };
+  });
+}
+const JURISDICTION_SEED = deriveLinesFromCoverage(LMSD_DETAILS_SEED, LINE_COVERAGE_SEED);
 // ---- Live/editable copies. Editor page mutates these in place so every page
 //      (which reads SUBSTATIONS/LINES fresh on each mount) reflects the edits. ----
 const SUBSTATIONS = {};
@@ -748,6 +741,56 @@ function applyGeoOverrides(geo) {
   const stored = loadGeoLocal();
   if (stored) applyGeoOverrides(stored);
 })();
+// ---- Cross-device boot sync (geometry + small app settings) ----
+// A handful of module-level constants below (KARJAT_FAMILY_, LMSD_LAYER_DEFS,
+// etc) are computed once, synchronously, at parse time from
+// SUBSTATIONS/LINES/DIVISION_COLOR_OVERRIDES/etc. An async fetch can't beat
+// that synchronous computation to the punch, so instead of trying to make
+// everything reactive, this does the pragmatic thing: fetch what's on the
+// Sheet, and if it's different from what this tab already rendered with,
+// cache it locally and reload ONCE (guarded so it can never loop). The
+// reload re-parses the file with the fresh cache already in place, so every
+// module-level constant computes correctly. Runs once per tab session.
+const BOOT_SYNC_GUARD_KEY = "karjatBootSyncReloaded_v1";
+async function bootSyncFromServer() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("PASTE_")) return;
+  if (sessionStorage.getItem(BOOT_SYNC_GUARD_KEY)) return; // already reloaded once this session
+  try {
+    const [geoRes, settingsRes] = await Promise.all([
+      fetch(`${APPS_SCRIPT_URL}?action=getgeometry&_=${Date.now()}`, { cache: "no-store" }).then((r) => r.json()).catch(() => null),
+      fetch(`${APPS_SCRIPT_URL}?action=getappsettings&_=${Date.now()}`, { cache: "no-store" }).then((r) => r.json()).catch(() => null)
+    ]);
+    let changed = false;
+    if (geoRes && geoRes.ok && geoRes.geometry && geoRes.geometry.subs && geoRes.geometry.lines) {
+      const incoming = JSON.stringify(geoRes.geometry);
+      const local = (() => { try { return JSON.stringify(loadGeoLocal()); } catch (e) { return null; } })();
+      if (incoming !== local) { saveGeoLocal(geoRes.geometry); changed = true; }
+    }
+    if (settingsRes && settingsRes.ok && settingsRes.settings) {
+      const s = settingsRes.settings;
+      if (s.divisionColors && JSON.stringify(s.divisionColors) !== (localStorage.getItem(DIVISION_COLOR_KEY) || "{}")) {
+        localStorage.setItem(DIVISION_COLOR_KEY, JSON.stringify(s.divisionColors));
+        changed = true;
+      }
+      if (s.highlightLevel && String(s.highlightLevel) !== localStorage.getItem(HIGHLIGHT_LEVEL_KEY)) {
+        localStorage.setItem(HIGHLIGHT_LEVEL_KEY, String(s.highlightLevel));
+        changed = true;
+      }
+      if (s.highlightWidth && String(s.highlightWidth) !== localStorage.getItem(HIGHLIGHT_WIDTH_KEY)) {
+        localStorage.setItem(HIGHLIGHT_WIDTH_KEY, String(s.highlightWidth));
+        changed = true;
+      }
+      if (s.traceColor && s.traceColor !== localStorage.getItem(TRACE_COLOR_KEY)) {
+        localStorage.setItem(TRACE_COLOR_KEY, s.traceColor);
+        changed = true;
+      }
+    }
+    if (changed) {
+      sessionStorage.setItem(BOOT_SYNC_GUARD_KEY, "1");
+      location.reload();
+    }
+  } catch (e) { /* offline, or Apps Script unreachable — keep whatever's cached locally */ }
+}
 
 const WMO = {
   0: { label: "Clear sky", mood: "sunny", icon: "sun" },
@@ -927,15 +970,21 @@ try {
   const raw = localStorage.getItem(DIVISION_COLOR_KEY);
   if (raw) DIVISION_COLOR_OVERRIDES = JSON.parse(raw);
 } catch (e) {}
+function syncDivisionColorsToServer_() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("PASTE_")) return;
+  fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "savedivisioncolors", divisionColors: DIVISION_COLOR_OVERRIDES }) }).catch(() => {});
+}
 function setDivisionColorOverride(name, color) {
   DIVISION_COLOR_OVERRIDES = { ...DIVISION_COLOR_OVERRIDES, [name]: color };
   try { localStorage.setItem(DIVISION_COLOR_KEY, JSON.stringify(DIVISION_COLOR_OVERRIDES)); } catch (e) {}
+  syncDivisionColorsToServer_();
 }
 function resetDivisionColorOverride(name) {
   const next = { ...DIVISION_COLOR_OVERRIDES };
   delete next[name];
   DIVISION_COLOR_OVERRIDES = next;
   try { localStorage.setItem(DIVISION_COLOR_KEY, JSON.stringify(DIVISION_COLOR_OVERRIDES)); } catch (e) {}
+  syncDivisionColorsToServer_();
 }
 // Corridor colour is deliberately the OPPOSITE hue of whatever colour the
 // line itself is drawn in (KV_COLOR), so the wide LMSD corridor never gets
@@ -1326,7 +1375,6 @@ function GridMap({
             color: layer.color,
             weight: 5,
             opacity: 0.85,
-            dashArray: "10 6",
             lineCap: "round"
           }).addTo(group).bindTooltip(`${layer.label || ""} \u2014 ${(SUBSTATIONS[line.from] || {}).name || line.from} \u2192 ${(SUBSTATIONS[line.to] || {}).name || line.to}`, { sticky: true });
         });
@@ -1444,21 +1492,9 @@ function useLiveJurisdiction() {
   useEffect(() => {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("PASTE_")) return;
     setLoading(true);
-    fetch(`${APPS_SCRIPT_URL}?action=getData&_=${Date.now()}`, { cache: "no-store" }).then((r) => r.json()).then((d) => {
-      if (d.ok && d.lines && d.lines.length) {
-        // The Sheet only knows officers/segments/length \u2014 never map geometry.
-        // Always keep the seed's lineKeys as the source of truth, only pulling
-        // the editable fields from live data when the line name matches exactly.
-        // A line with no live match (name drift, not-yet-synced Sheet, etc.)
-        // keeps its full seed entry rather than ending up geometry-less, which
-        // is what was making corridors/schematics/the LMSD table go blank a
-        // few seconds after load.
-        const liveByName = new Map(d.lines.map((l) => [l.line, l]));
-        const merged = JURISDICTION_SEED.map((seed) => {
-          const live = liveByName.get(seed.line);
-          return live ? { ...seed, segments: live.segments || seed.segments, teams: live.teams || seed.teams, length: live.length || seed.length } : seed;
-        });
-        setLines(merged);
+    fetch(`${APPS_SCRIPT_URL}?action=getlmsdmodel&_=${Date.now()}`, { cache: "no-store" }).then((r) => r.json()).then((d) => {
+      if (d.ok && d.lmsdDetails && d.lmsdDetails.length && d.lineCoverage && d.lineCoverage.length) {
+        setLines(deriveLinesFromCoverage(d.lmsdDetails, d.lineCoverage));
       }
     }).catch(() => {
     }).finally(() => setLoading(false));
@@ -1547,6 +1583,9 @@ function loadTraceColor() {
 }
 function saveTraceColor(c) {
   try { localStorage.setItem(TRACE_COLOR_KEY, c); } catch (e) {}
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("PASTE_")) {
+    fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "savetracecolor", traceColor: c }) }).catch(() => {});
+  }
 }
 function loadTraceMargin() {
   try { const v = sessionStorage.getItem(TRACE_MARGIN_KEY); return v ? parseFloat(v) : 3; } catch (e) { return 3; }
@@ -1655,14 +1694,20 @@ const HIGHLIGHT_WIDTH_KEY = "karjatHighlightWidthM_v1";
 function loadHighlightLevel() {
   try { const v = localStorage.getItem(HIGHLIGHT_LEVEL_KEY); return v ? parseFloat(v) : 24; } catch (e) { return 24; }
 }
+function syncHighlightToServer_(level, width) {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("PASTE_")) return;
+  fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "savehighlight", highlightLevel: level, highlightWidth: width }) }).catch(() => {});
+}
 function saveHighlightLevel(v) {
   try { localStorage.setItem(HIGHLIGHT_LEVEL_KEY, String(v)); } catch (e) {}
+  syncHighlightToServer_(v, loadHighlightWidth());
 }
 function loadHighlightWidth() {
   try { const v = localStorage.getItem(HIGHLIGHT_WIDTH_KEY); return v ? parseFloat(v) : CORRIDOR_HALF_WIDTH_M; } catch (e) { return CORRIDOR_HALF_WIDTH_M; }
 }
 function saveHighlightWidth(v) {
   try { localStorage.setItem(HIGHLIGHT_WIDTH_KEY, String(v)); } catch (e) {}
+  syncHighlightToServer_(loadHighlightLevel(), v);
 }
 function AdjustHighlightButton({ level, width, onLevelChange, onWidthChange, zonesEnabled }) {
   const [open, setOpen] = useState(false);
@@ -1694,9 +1739,12 @@ function LmsdPage() {
   function setHighlightLevel(v) { setHighlightLevelState(v); saveHighlightLevel(v); }
   function setHighlightWidth(v) { setHighlightWidthState(v); saveHighlightWidth(v); }
   const liveEnabled = APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("PASTE_");
-  const [lines, setLines] = useState(JURISDICTION_SEED.map((l) => ({ ...l, teams: l.teams.map((t) => ({ ...t, members: t.members.map((m) => ({ ...m })) })) })));
+  const [lmsdDetails, setLmsdDetails] = useState(() => LMSD_DETAILS_SEED.map((d) => ({ ...d, employees: d.employees.map((e) => ({ ...e })) })));
+  const [lineCoverage, setLineCoverage] = useState(() => LINE_COVERAGE_SEED.map((lc) => ({ ...lc, ranges: lc.ranges.map((r) => ({ ...r })) })));
+  const lines = useMemo(() => deriveLinesFromCoverage(lmsdDetails, lineCoverage), [lmsdDetails, lineCoverage]);
   const [loading, setLoading] = useState(false);
-  const [editingLine, setEditingLine] = useState(null);
+  const [editingLmsdId, setEditingLmsdId] = useState(null);
+  const [editingCoverageLine, setEditingCoverageLine] = useState(null);
   const [saving, setSaving] = useState(false);
   const [selectedCorridor, setSelectedCorridor] = useState(null);
   const [activeLayers, setActiveLayers] = useState({ karjat400: true, karjat220: true });
@@ -1704,73 +1752,98 @@ function LmsdPage() {
   useEffect(() => {
     if (!liveEnabled) return;
     setLoading(true);
-    fetch(`${APPS_SCRIPT_URL}?action=getData&_=${Date.now()}`, { cache: "no-store" }).then((r) => r.json()).then((d) => {
-      if (!d.ok || !d.lines || !d.lines.length) return;
-      // Never let live data (which has no geometry) fully replace a line \u2014
-      // only pull the editable officer/segment/length fields per name match,
-      // keeping lineKeys from the seed always intact.
-      const liveByName = new Map(d.lines.map((l) => [l.line, l]));
-      setLines((prev) => prev.map((seedLine) => {
-        const live = liveByName.get(seedLine.line);
-        return live ? { ...seedLine, segments: live.segments || seedLine.segments, teams: live.teams || seedLine.teams, length: live.length || seedLine.length } : seedLine;
-      }));
+    fetch(`${APPS_SCRIPT_URL}?action=getlmsdmodel&_=${Date.now()}`, { cache: "no-store" }).then((r) => r.json()).then((d) => {
+      if (d.ok && d.lmsdDetails && d.lmsdDetails.length) setLmsdDetails(d.lmsdDetails);
+      if (d.ok && d.lineCoverage && d.lineCoverage.length) setLineCoverage(d.lineCoverage);
     }).catch(() => {
     }).finally(() => setLoading(false));
   }, []);
-  function updateLine(lineName, updater) {
-    setLines((prev) => prev.map((l) => l.line === lineName ? updater(l) : l));
+  function updateLmsdDetail(id, updater) {
+    setLmsdDetails((prev) => prev.map((d) => d.id === id ? updater(d) : d));
   }
-  function addTeam(lineName) {
-    updateLine(lineName, (l) => {
-      if (l.teams.length >= 5) return l;
-      return { ...l, teams: [...l.teams, { teamName: `Team ${l.teams.length + 1}`, members: [{ name: "", post: "", mobile: "" }] }] };
-    });
+  function addLmsdDetail() {
+    const id = "lmsd_" + Date.now();
+    setLmsdDetails((prev) => [...prev, { id, name: "New LMSD", zone: "", circle: "", division: "", color: "", employees: [] }]);
+    setEditingLmsdId(id);
   }
-  function removeTeam(lineName, idx) {
-    updateLine(lineName, (l) => ({ ...l, teams: l.teams.filter((_, i) => i !== idx) }));
+  async function removeLmsdDetail(id) {
+    const inUse = lineCoverage.some((lc) => lc.ranges.some((r) => r.lmsdId === id));
+    if (inUse) {
+      await showAlert("This LMSD is still assigned to at least one line under \u201cLMSDs Covering Line\u201d \u2014 reassign or remove those ranges first.");
+      return;
+    }
+    if (!await askConfirm("Delete this LMSD from the details list?")) return;
+    setLmsdDetails((prev) => prev.filter((d) => d.id !== id));
   }
-  function addMember(lineName, teamIdx) {
-    updateLine(lineName, (l) => ({
-      ...l,
-      teams: l.teams.map((t, i) => i === teamIdx && t.members.length < 5 ? { ...t, members: [...t.members, { name: "", post: "", mobile: "" }] } : t)
-    }));
+  function addEmployee(lmsdId) {
+    updateLmsdDetail(lmsdId, (d) => d.employees.length >= 8 ? d : { ...d, employees: [...d.employees, { name: "", post: "", mobile: "", whatsapp: true }] });
   }
-  function removeMember(lineName, teamIdx, mIdx) {
-    updateLine(lineName, (l) => ({
-      ...l,
-      teams: l.teams.map((t, i) => i === teamIdx ? { ...t, members: t.members.filter((_, j) => j !== mIdx) } : t)
-    }));
+  function removeEmployee(lmsdId, idx) {
+    updateLmsdDetail(lmsdId, (d) => ({ ...d, employees: d.employees.filter((_, i) => i !== idx) }));
   }
-  function updateMember(lineName, teamIdx, mIdx, field, value) {
-    updateLine(lineName, (l) => ({
-      ...l,
-      teams: l.teams.map((t, i) => i === teamIdx ? { ...t, members: t.members.map((m, j) => j === mIdx ? { ...m, [field]: value } : m) } : t)
-    }));
+  function updateEmployee(lmsdId, idx, field, value) {
+    updateLmsdDetail(lmsdId, (d) => ({ ...d, employees: d.employees.map((e, i) => i === idx ? { ...e, [field]: value } : e) }));
   }
-  async function save(line) {
+  function changeLmsdColor(lmsdId, name, color) {
+    updateLmsdDetail(lmsdId, (d) => ({ ...d, color }));
+    setDivisionColorOverride(name, color);
+    setColorVersion((v) => v + 1);
+  }
+  async function saveLmsdDetails() {
     if (!liveEnabled) {
       await showAlert("This is running in preview mode (no Apps Script URL configured), so changes stay local to your browser only.");
-      setEditingLine(null);
+      setEditingLmsdId(null);
       return;
     }
     setSaving(true);
     try {
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: "saveTeams", line: line.line, teams: line.teams })
-      });
+      const res = await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "savelmsddetails", lmsdDetails }) });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error);
-      setEditingLine(null);
+      setEditingLmsdId(null);
     } catch (e) {
       await showAlert("Could not save: " + e.message);
     } finally {
       setSaving(false);
     }
   }
-  function changeDivisionColor(name, color) {
-    setDivisionColorOverride(name, color);
-    setColorVersion((v) => v + 1);
+  function setCoverageRangeCount(lineName, count) {
+    setLineCoverage((prev) => prev.map((lc) => {
+      if (lc.line !== lineName) return lc;
+      const total = parseKmTotal(lc.length);
+      const n = Math.max(1, Math.min(6, count));
+      const step = total / n;
+      const ranges = Array.from({ length: n }, (_, i) => {
+        const existing = lc.ranges[i];
+        return { lmsdId: existing ? existing.lmsdId : (lmsdDetails[0] || {}).id || "", kmEnd: i === n - 1 ? total : +(step * (i + 1)).toFixed(2) };
+      });
+      return { ...lc, ranges };
+    }));
+  }
+  function updateCoverageRange(lineName, idx, field, value) {
+    setLineCoverage((prev) => prev.map((lc) => {
+      if (lc.line !== lineName) return lc;
+      const ranges = lc.ranges.map((r, i) => i === idx ? { ...r, [field]: value } : r);
+      return { ...lc, ranges };
+    }));
+  }
+  async function saveLineCoverage() {
+    if (!liveEnabled) {
+      await showAlert("This is running in preview mode (no Apps Script URL configured), so changes stay local to your browser only.");
+      setEditingCoverageLine(null);
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "savelinecoverage", lineCoverage }) });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error);
+      setEditingCoverageLine(null);
+    } catch (e) {
+      await showAlert("Could not save: " + e.message);
+    } finally {
+      setSaving(false);
+    }
   }
   const selectedInfo = useMemo(() => {
     if (!selectedCorridor) return null;
@@ -1948,54 +2021,127 @@ function LmsdPage() {
     ),
     React.createElement("div", { className: "lmsd-maintenance-section" },
       React.createElement(PageHeader, {
-        eyebrow: "Line Maintenance Directory",
-        title: "Who's responsible, where",
-        subtitle: loading ? "Loading live data from the Sheet\u2026" : liveEnabled ? "Km length allotted with the LMSD officer(s) for that stretch \u2014 connected to your Google Sheet, editable right here" : "Preview mode \u2014 add your Apps Script URL for live editing"
+        eyebrow: "LMSD Details",
+        title: "The LMSD offices themselves",
+        subtitle: loading ? "Loading live data\u2026" : liveEnabled ? "Zone, circle, division, employees and highlight colour \u2014 independent of which lines they cover" : "Preview mode \u2014 add your Apps Script URL for live editing"
       }),
       React.createElement("div", { className: "maint-3col-grid" },
-        lines.map((line) => {
-          const editing = editingLine === line.line;
-          const segTeamAligned = line.segments.length === line.teams.length;
-          const allDivisions = [...new Set(line.segments.map((s) => s.division))];
-          return React.createElement("div", { key: line.line, className: "line-card maint-card maint-card-3col" },
+        lmsdDetails.map((d) => {
+          const editing = editingLmsdId === d.id;
+          return React.createElement("div", { key: d.id, className: "line-card maint-card maint-card-3col", style: { borderColor: divisionColor(d.name, "400") } },
             React.createElement("div", { className: "line-card-head" },
-              React.createElement("div", { className: "line-card-title" }, line.line),
+              !editing
+                ? React.createElement("div", { className: "line-card-title" }, d.name)
+                : React.createElement("input", { className: "team-name-input", value: d.name, onChange: (e) => updateLmsdDetail(d.id, (x) => ({ ...x, name: e.target.value })) }),
               React.createElement("div", { className: "line-card-head-right" },
-                React.createElement("div", { className: "line-card-length" }, line.length),
                 !editing
-                  ? React.createElement("button", { className: "edit-btn", onClick: () => setEditingLine(line.line) }, "Edit officers")
+                  ? React.createElement("button", { className: "edit-btn", onClick: () => setEditingLmsdId(d.id) }, "Edit")
                   : React.createElement("div", { className: "edit-actions" },
-                      React.createElement("button", { className: "save-btn", disabled: saving, onClick: () => save(line) }, saving ? "Saving\u2026" : "Save"),
-                      React.createElement("button", { className: "cancel-btn", onClick: () => setEditingLine(null) }, "Cancel")
+                      React.createElement("button", { className: "save-btn", disabled: saving, onClick: saveLmsdDetails }, saving ? "Saving\u2026" : "Save"),
+                      React.createElement("button", { className: "cancel-btn", onClick: () => setEditingLmsdId(null) }, "Cancel")
                     )
               )
+            ),
+            !editing
+              ? React.createElement("div", { className: "lmsd-detail-meta" },
+                  (d.zone || d.circle || d.division) && React.createElement("div", { className: "muted" }, [d.zone, d.circle, d.division].filter(Boolean).join(" \u00b7 ")),
+                  d.employees.length === 0
+                    ? React.createElement("span", { className: "muted" }, "No employees yet")
+                    : d.employees.map((e, i) => React.createElement("div", { key: i, className: "officer-line" },
+                        React.createElement("span", null, e.name), " ", React.createElement("span", { className: "muted" }, "\u00b7 ", e.post),
+                        React.createElement("div", { className: "jur-mobile-actions" },
+                          React.createElement("a", { className: "contact-btn", href: `tel:${e.mobile}` }, React.createElement(Phone, { size: 11 }), " Call"),
+                          e.whatsapp !== false && React.createElement("a", { className: "contact-btn whatsapp", href: `https://wa.me/91${e.mobile}`, target: "_blank", rel: "noreferrer" }, "WhatsApp"),
+                          React.createElement("span", { className: "mono" }, e.mobile)
+                        )
+                      ))
+                )
+              : React.createElement("div", { className: "lmsd-detail-edit" },
+                  React.createElement("div", { className: "lmsd-edit-row" },
+                    React.createElement("input", { placeholder: "Zone", value: d.zone, onChange: (e) => updateLmsdDetail(d.id, (x) => ({ ...x, zone: e.target.value })) }),
+                    React.createElement("input", { placeholder: "Circle", value: d.circle, onChange: (e) => updateLmsdDetail(d.id, (x) => ({ ...x, circle: e.target.value })) }),
+                    React.createElement("input", { placeholder: "Division", value: d.division, onChange: (e) => updateLmsdDetail(d.id, (x) => ({ ...x, division: e.target.value })) })
+                  ),
+                  React.createElement("label", { className: "trace-field trace-color-field" }, "Highlight colour",
+                    React.createElement("input", { type: "color", value: d.color || divisionColor(d.name, "400"), onChange: (e) => changeLmsdColor(d.id, d.name, e.target.value) })
+                  ),
+                  d.employees.map((e, i) => React.createElement("div", { className: "member-row", key: i },
+                    React.createElement("input", { placeholder: "Name", value: e.name, onChange: (ev) => updateEmployee(d.id, i, "name", ev.target.value) }),
+                    React.createElement("input", { placeholder: "Post", value: e.post, onChange: (ev) => updateEmployee(d.id, i, "post", ev.target.value) }),
+                    React.createElement("input", { placeholder: "Mobile", value: e.mobile, onChange: (ev) => updateEmployee(d.id, i, "mobile", ev.target.value) }),
+                    React.createElement("label", { className: "switch-toggle small" + (e.whatsapp !== false ? " on" : ""), title: "Send WhatsApp" },
+                      React.createElement("input", { type: "checkbox", checked: e.whatsapp !== false, onChange: (ev) => updateEmployee(d.id, i, "whatsapp", ev.target.checked), style: { display: "none" } }),
+                      React.createElement("span", { className: "switch-track" }, React.createElement("span", { className: "switch-thumb" }))
+                    ),
+                    React.createElement("button", { className: "x-btn", onClick: () => removeEmployee(d.id, i) }, "\xD7")
+                  )),
+                  d.employees.length < 8 && React.createElement("button", { className: "add-link", onClick: () => addEmployee(d.id) }, "+ Add employee"),
+                  React.createElement("button", { className: "add-link danger", onClick: () => removeLmsdDetail(d.id) }, "Delete this LMSD")
+                )
+          );
+        })
+      ),
+      React.createElement("button", { className: "add-team-btn", onClick: addLmsdDetail }, "+ Add LMSD")
+    ),
+    React.createElement("div", { className: "lmsd-maintenance-section" },
+      React.createElement(PageHeader, {
+        eyebrow: "LMSDs Covering Line",
+        title: "Who's responsible, where",
+        subtitle: loading ? "Loading live data\u2026" : liveEnabled ? "Km ranges assigned to each LMSD, per line \u2014 connected to your Google Sheet, editable right here" : "Preview mode \u2014 add your Apps Script URL for live editing"
+      }),
+      React.createElement("div", { className: "maint-3col-grid" },
+        lineCoverage.map((lc) => {
+          const editing = editingCoverageLine === lc.line;
+          const totalKm = parseKmTotal(lc.length);
+          return React.createElement("div", { key: lc.line, className: "line-card maint-card maint-card-3col" },
+            React.createElement("div", { className: "line-card-head" },
+              React.createElement("div", { className: "line-card-title" }, lc.line),
+              React.createElement("div", { className: "line-card-head-right" },
+                React.createElement("div", { className: "line-card-length" }, lc.length),
+                !editing
+                  ? React.createElement("button", { className: "edit-btn", onClick: () => setEditingCoverageLine(lc.line) }, "Edit")
+                  : React.createElement("div", { className: "edit-actions" },
+                      React.createElement("button", { className: "save-btn", disabled: saving, onClick: saveLineCoverage }, saving ? "Saving\u2026" : "Save"),
+                      React.createElement("button", { className: "cancel-btn", onClick: () => setEditingCoverageLine(null) }, "Cancel")
+                    )
+              )
+            ),
+            editing && React.createElement("label", { className: "trace-field" }, "How many LMSDs cover this line?",
+              React.createElement("input", { type: "number", min: 1, max: 6, value: lc.ranges.length, onChange: (e) => setCoverageRangeCount(lc.line, parseInt(e.target.value, 10) || 1) })
             ),
             React.createElement("table", { className: "mini-table maint-table" },
               React.createElement("thead", null,
                 React.createElement("tr", null,
                   React.createElement("th", null, "Km"),
                   React.createElement("th", null, "LMSD"),
-                  React.createElement("th", null, "Officer(s)")
+                  !editing && React.createElement("th", null, "Officer(s)")
                 )
               ),
               React.createElement("tbody", null,
-                line.segments.map((s, i) => {
-                  const team = segTeamAligned ? line.teams[i] : null;
-                  const officers = team ? team.members : line.teams.flatMap((t) => t.members);
+                lc.ranges.map((r, i) => {
+                  const prevKm = i === 0 ? 0 : lc.ranges[i - 1].kmEnd;
+                  const detail = lmsdDetails.find((d) => d.id === r.lmsdId);
                   return React.createElement("tr", { key: i },
-                    React.createElement("td", { className: "mono" }, simplifyChainage(s.chainage, line.segments.length)),
+                    React.createElement("td", { className: "mono" }, prevKm, "\u2013", i === lc.ranges.length - 1 ? totalKm : r.kmEnd),
                     React.createElement("td", null,
-                      React.createElement("span", { className: "multi-lmsd-chip", style: { borderColor: divisionColor(s.division, line.line.includes("220") ? "220" : "400") } }, s.division)
+                      !editing
+                        ? React.createElement("span", { className: "multi-lmsd-chip", style: { borderColor: divisionColor(detail ? detail.name : "", lc.line.includes("220") ? "220" : "400") } }, detail ? detail.name : "(unassigned)")
+                        : React.createElement("div", { className: "coverage-edit-cell" },
+                            React.createElement("select", { value: r.lmsdId, onChange: (e) => updateCoverageRange(lc.line, i, "lmsdId", e.target.value) },
+                              lmsdDetails.map((d) => React.createElement("option", { key: d.id, value: d.id }, d.name))
+                            ),
+                            i < lc.ranges.length - 1 && React.createElement("input", { type: "number", className: "coverage-km-input", value: r.kmEnd, min: prevKm, max: totalKm, step: 0.1, onChange: (e) => updateCoverageRange(lc.line, i, "kmEnd", parseFloat(e.target.value) || prevKm) })
+                          )
                     ),
-                    React.createElement("td", null,
-                      officers.length === 0
+                    !editing && React.createElement("td", null,
+                      !detail || detail.employees.length === 0
                         ? React.createElement("span", { className: "muted" }, "None yet")
                         : React.createElement("div", { className: "officer-stack" },
-                            officers.map((m, j) => React.createElement("div", { key: j, className: "officer-line" },
+                            detail.employees.map((m, j) => React.createElement("div", { key: j, className: "officer-line" },
                               React.createElement("span", null, m.name), " ",
-                              React.createElement("span", { className: "jur-mobile-actions" },
+                              React.createElement("div", { className: "jur-mobile-actions" },
                                 React.createElement("a", { className: "contact-btn", href: `tel:${m.mobile}` }, React.createElement(Phone, { size: 10 }), " Call"),
-                                React.createElement("a", { className: "contact-btn whatsapp", href: `https://wa.me/91${m.mobile}`, target: "_blank", rel: "noreferrer" }, "WA")
+                                m.whatsapp !== false && React.createElement("a", { className: "contact-btn whatsapp", href: `https://wa.me/91${m.mobile}`, target: "_blank", rel: "noreferrer" }, "WA")
                               )
                             ))
                           )
@@ -2003,26 +2149,6 @@ function LmsdPage() {
                   );
                 })
               )
-            ),
-            editing && React.createElement("div", { className: "teams-grid editor-teams-grid" },
-              line.teams.map((team, ti) => React.createElement("div", { key: ti, className: "team-card" },
-                React.createElement("div", { className: "team-card-head" },
-                  React.createElement("input", {
-                    className: "team-name-input",
-                    value: team.teamName,
-                    onChange: (e) => updateLine(line.line, (l) => ({ ...l, teams: l.teams.map((t, i) => i === ti ? { ...t, teamName: e.target.value } : t) }))
-                  }),
-                  React.createElement("button", { className: "x-btn", onClick: () => removeTeam(line.line, ti) }, "\xD7")
-                ),
-                team.members.map((m, mi) => React.createElement("div", { className: "member-row", key: mi },
-                  React.createElement("input", { placeholder: "Name", value: m.name, onChange: (e) => updateMember(line.line, ti, mi, "name", e.target.value) }),
-                  React.createElement("input", { placeholder: "Post", value: m.post, onChange: (e) => updateMember(line.line, ti, mi, "post", e.target.value) }),
-                  React.createElement("input", { placeholder: "Mobile", value: m.mobile, onChange: (e) => updateMember(line.line, ti, mi, "mobile", e.target.value) }),
-                  team.members.length > 1 && React.createElement("button", { className: "x-btn", onClick: () => removeMember(line.line, ti, mi) }, "\xD7")
-                )),
-                team.members.length < 5 && React.createElement("button", { className: "add-link", onClick: () => addMember(line.line, ti) }, "+ Add person")
-              )),
-              line.teams.length < 5 && React.createElement("button", { className: "add-team-btn", onClick: () => addTeam(line.line) }, "+ Add team")
             )
           );
         })
@@ -2392,15 +2518,47 @@ function PrintMapsPage() {
 }
 // ---- Per-substation weather background photos (user-uploaded, stored locally) ----
 const WEATHER_BG_STORAGE_KEY = "karjatWeatherBgOverrides_v1";
+// Normalizes entries into {id, dataUrl} objects. Older saves in this browser
+// may still have bare data-URL strings; those get a "local_"-prefixed id so
+// upload code below knows they haven't been pushed to the Sheet yet.
+function normalizeWeatherBgStore_(raw) {
+  const out = {};
+  Object.entries(raw || {}).forEach(([k, list]) => {
+    out[k] = (list || []).map((item, i) =>
+      typeof item === "string" ? { id: `local_${k}_${i}_${Date.now()}`, dataUrl: item } : item
+    );
+  });
+  return out;
+}
 function loadWeatherBgStore() {
   try {
     const raw = localStorage.getItem(WEATHER_BG_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    return raw ? normalizeWeatherBgStore_(JSON.parse(raw)) : {};
   } catch (e) { return {}; }
 }
 function saveWeatherBgStore(store) {
   try { localStorage.setItem(WEATHER_BG_STORAGE_KEY, JSON.stringify(store)); return true; }
   catch (e) { return false; }
+}
+async function fetchWeatherBgFromServer_() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("PASTE_")) return null;
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getweatherbg&_=${Date.now()}`, { cache: "no-store" });
+    const json = await res.json();
+    return json && json.ok ? json.store : null;
+  } catch (e) { return null; }
+}
+async function addWeatherPhotoToServer_(subKey, dataUrl) {
+  const res = await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "addweatherphoto", subKey, dataUrl }) });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || "Upload failed");
+  return json.photo; // { id, subKey }
+}
+async function removeWeatherPhotoFromServer_(subKey, photoId) {
+  if (String(photoId).startsWith("local_")) return; // never uploaded, nothing to delete server-side
+  try {
+    await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "removeweatherphoto", subKey, photoId }) });
+  } catch (e) { /* best-effort */ }
 }
 // Downscales + JPEG-compresses an uploaded photo client-side before it goes into
 // localStorage, so a handful of phone photos per substation don't blow the quota.
@@ -2437,10 +2595,37 @@ function WeatherPage() {
   const [bgIndex, setBgIndex] = useState(0);
   const [managerOpen, setManagerOpen] = useState(false);
   const [bgBusy, setBgBusy] = useState(false);
+  const bgLiveEnabled = APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("PASTE_");
 
   useEffect(() => {
     const pts = WEATHER_TABS.map((k) => ({ key: k, lat: SUBSTATIONS[k].lat, lon: SUBSTATIONS[k].lon }));
     fetchWeatherBatch(pts).then(setData).catch(console.error);
+  }, []);
+
+  // On mount: pull the Sheet's photo library (source of truth across
+  // devices), then push up any photos this browser added while offline
+  // (bare "local_" ids that never made it to the Sheet) so they stop being
+  // stuck on just this device.
+  useEffect(() => {
+    if (!bgLiveEnabled) return;
+    (async () => {
+      const serverStore = await fetchWeatherBgFromServer_();
+      if (!serverStore) return; // offline / unreachable — keep local cache as-is
+      const localStore = loadWeatherBgStore();
+      const merged = { ...serverStore };
+      for (const [subKey, photos] of Object.entries(localStore)) {
+        const localOnly = (photos || []).filter((p) => String(p.id).startsWith("local_"));
+        for (const p of localOnly) {
+          try {
+            const uploaded = await addWeatherPhotoToServer_(subKey, p.dataUrl);
+            merged[subKey] = [...(merged[subKey] || []), { id: uploaded.id, dataUrl: p.dataUrl }];
+          } catch (e) { /* leave it local-only for next time */ }
+        }
+      }
+      saveWeatherBgStore(merged);
+      setBgStore(merged);
+    })();
+    // eslint-disable-next-line
   }, []);
 
   // Pick a fresh random photo for this substation on mount and every time the
@@ -2454,7 +2639,7 @@ function WeatherPage() {
   const current = data[active];
   const mood = current ? wmoInfo(current.current_weather.weathercode).mood : "cloudy";
   const bgImages = bgStore[active] || [];
-  const bgPhoto = bgImages[bgIndex] || null;
+  const bgPhoto = (bgImages[bgIndex] || {}).dataUrl || null;
 
   async function handleBgUpload(e) {
     const files = Array.from(e.target.files || []);
@@ -2463,12 +2648,24 @@ function WeatherPage() {
     setBgBusy(true);
     try {
       const compressed = await Promise.all(files.map((f) => readImageCompressed(f)));
+      const newEntries = [];
+      for (const dataUrl of compressed) {
+        if (bgLiveEnabled) {
+          try {
+            const uploaded = await addWeatherPhotoToServer_(active, dataUrl);
+            newEntries.push({ id: uploaded.id, dataUrl });
+          } catch (err) {
+            newEntries.push({ id: `local_${active}_${Date.now()}_${Math.random()}`, dataUrl });
+          }
+        } else {
+          newEntries.push({ id: `local_${active}_${Date.now()}_${Math.random()}`, dataUrl });
+        }
+      }
       const priorCount = (bgStore[active] || []).length;
-      const next = { ...bgStore, [active]: [...(bgStore[active] || []), ...compressed] };
+      const next = { ...bgStore, [active]: [...(bgStore[active] || []), ...newEntries] };
       const ok = saveWeatherBgStore(next);
       if (!ok) {
-        await showAlert("Couldn\u2019t save that photo \u2014 this device\u2019s local storage is full. Remove a few existing photos first, then try again.");
-        return;
+        await showAlert("Couldn\u2019t cache that photo on this device (local storage full), but it saved to the Sheet if you're online \u2014 remove a few existing photos to free up space here.");
       }
       setBgStore(next);
       setBgIndex(priorCount);
@@ -2482,11 +2679,12 @@ function WeatherPage() {
   async function removeBgPhoto(idx) {
     if (!await askConfirm("Remove this photo?")) return;
     const imgs = [...(bgStore[active] || [])];
-    imgs.splice(idx, 1);
+    const [removed] = imgs.splice(idx, 1);
     const next = { ...bgStore, [active]: imgs };
     saveWeatherBgStore(next);
     setBgStore(next);
     setBgIndex(0);
+    if (bgLiveEnabled && removed) removeWeatherPhotoFromServer_(active, removed.id);
   }
 
   return /* @__PURE__ */ React.createElement("div", { className: `page weather-page mood-${mood}` },
@@ -2504,11 +2702,11 @@ function WeatherPage() {
       managerOpen ? /* @__PURE__ */ React.createElement("div", { className: "weather-bg-panel no-print" },
         /* @__PURE__ */ React.createElement("div", { className: "weather-bg-panel-head" },
           /* @__PURE__ */ React.createElement("span", null, "Background photos \u2014 ", SUBSTATIONS[active].name),
-          /* @__PURE__ */ React.createElement("span", { className: "hint" }, "stored on this device \u00b7 one shown at random each visit")
+          /* @__PURE__ */ React.createElement("span", { className: "hint" }, bgLiveEnabled ? "synced to your Google Sheet \u00b7 one shown at random each visit" : "stored on this device only \u00b7 one shown at random each visit")
         ),
         /* @__PURE__ */ React.createElement("div", { className: "weather-bg-thumbs" },
-          bgImages.map((src, i) => /* @__PURE__ */ React.createElement("div", { className: "weather-bg-thumb", key: i },
-            /* @__PURE__ */ React.createElement("img", { src, alt: "" }),
+          bgImages.map((img, i) => /* @__PURE__ */ React.createElement("div", { className: "weather-bg-thumb", key: img.id || i },
+            /* @__PURE__ */ React.createElement("img", { src: img.dataUrl, alt: "" }),
             /* @__PURE__ */ React.createElement("button", { className: "thumb-x", onClick: () => removeBgPhoto(i), title: "Remove" }, "\u00d7")
           )),
           /* @__PURE__ */ React.createElement("label", { className: "weather-bg-add", title: "Add photos" },
@@ -3175,6 +3373,7 @@ function App() {
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
+  useEffect(() => { bootSyncFromServer(); }, []);
   const Current = (ROUTES[route] || ROUTES[""]).comp;
   return /* @__PURE__ */ React.createElement("div", { className: "app-shell" }, /* @__PURE__ */ React.createElement("nav", { className: "topnav" }, /* @__PURE__ */ React.createElement("div", { className: "brand" }, /* @__PURE__ */ React.createElement("span", { className: "brand-dot" }), "Line Maps for 400 kV Karjat"), /* @__PURE__ */ React.createElement("div", { className: "nav-links" }, Object.entries(ROUTES).map(([path, r]) => /* @__PURE__ */ React.createElement("a", { key: path, href: `#/${path}`, className: route === path ? "active" : "" }, r.label)))), /* @__PURE__ */ React.createElement("main", null, /* @__PURE__ */ React.createElement(Current, null)), /* @__PURE__ */ React.createElement("footer", { className: "app-footer" }, "Working reference portal built from field-supplied data ", "\u2014", " not an official MSETCL/POWERGRID system."), /* @__PURE__ */ React.createElement(ModalHost, null));
 }
